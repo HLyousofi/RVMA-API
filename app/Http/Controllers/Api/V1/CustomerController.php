@@ -32,7 +32,6 @@ class CustomerController extends Controller
         if($includeVehicles){
             $customers = $customers->with('vehicles');
         }
-        
         if($pageSize == 'all'){
             $customers = $customers->get();
             $selectedProperties = $customers->map(function ($customer) {

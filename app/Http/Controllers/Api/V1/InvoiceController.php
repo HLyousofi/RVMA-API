@@ -21,13 +21,14 @@ class InvoiceController extends Controller
     {
         $filter = new InvoiceFilter();
         $queryItems = $filter->transform($request);
-        $invoices = Invoice::where($queryItems)->get();
-        // $inclideOrders = $request->query('includeOrders');
-        // if($inclideOrders){
-        //     $invoices = $invoices->with('orders');
-        // }
-        return new InvoiceCollection($invoices);
-        
+        $pageSize = $request->query('pageSize');
+        $invoices = Invoice::where($queryItems);
+        $inclideOrders = $request->query('includeOrders');
+        if($inclideOrders){
+            $invoices = $invoices->with('orders');
+        }
+        return new InvoiceCollection($invoices->paginate($pageSize)->appends($request->query()));
+
     }
 
     /**

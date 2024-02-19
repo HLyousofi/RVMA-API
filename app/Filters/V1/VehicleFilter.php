@@ -12,11 +12,13 @@ class VehicleFilter extends ApiFilter {
         'model' => ['eq'],
         'plateNumber' => ['eq'],
         'fuelType' => ['eq', 'ne'],
+        'customerId' => ['eq']
     ];
 
     protected $colomnMap = [
         'plateNumber' => 'plate_number',
-        'fuelType' => 'fuel_type'
+        'fuelType' => 'fuel_type',
+        'customerId' => 'customer_id'
     ];
 
     protected $operatorMap = [
