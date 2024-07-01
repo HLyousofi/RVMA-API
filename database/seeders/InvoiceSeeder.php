@@ -15,12 +15,12 @@ class InvoiceSeeder extends Seeder
     public function run(): void
     {
         Invoice::factory()
-            ->count(5)
-            ->hasOrders(17)
+            ->count(3)
+            ->hasOrders(10)
             ->create();
 
         Invoice::factory()
-            ->count(8)
+            ->count(4)
             ->hasOrders(10)
             ->create();
     }

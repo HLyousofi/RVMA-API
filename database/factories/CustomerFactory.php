@@ -26,7 +26,7 @@ class CustomerFactory extends Factory
             'email' => $this->faker->email(),
             'adress' => $this->faker->address(),
             'phone_number' => $this->faker->phoneNumber(),
-            'custom_info' =>json_encode($info)
+           // 'custom_info' =>json_encode($info)
         ];
     }
 }

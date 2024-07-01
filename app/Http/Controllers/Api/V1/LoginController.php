@@ -17,25 +17,46 @@ class LoginController extends Controller
             'email' => 'required|string',
             'password' => 'required|string'
         ]);
-        if(Auth::attempt($fields)){
-           
-            $user = Auth::user();
-            
-           
 
-            $token = $user->createToken('admin-token', expiresAt:now()->addHours(2))->plainTextToken;
-            return response([   'succes' => true,
-                                'name' => $user->name,
-                                'accessToken' => $token,
-                                // 'rights' => json_decode($user->right),
-                                // 'role' => $user->role
-                            
-                            ]);
+        try {
+            if (Auth::attempt($fields)) {
+                $user = Auth::user();
+        
+                try {
+                    // Attempt to create a token
+                    $token = $user->createToken('admin-token', expiresAt:now()->addHours(2))->plainTextToken;
+                    return response([
+                        'success' => true,
+                        'name' => $user->name,
+                        'accessToken' => $token,
+                        // 'rights' => json_decode($user->right),
+                        // 'role' => $user->role
+                    ]);
+                } catch (\Exception $e) {
+                    // Handle any errors that occur during the token creation
+                    return response([
+                        'success' => false,
+                        'error' => 'An error occurred while creating the token: ' . $e->getMessage()
+                    ], 500);
+                }
+            } else {
+                // If authentication fails
+                return response([
+                    'success' => false,
+                    'error' => 'error email or password'
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Handle any errors that occur during the authentication attempt
+            return response([
+                'success' => false,
+                'error' => 'An error occurred during authentication: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response([   'succes' => false,
-                            'error' => "error email or password"]);
     }
+
+    
+
 
     public function logout(Request $request) {
         $user = Auth::user();

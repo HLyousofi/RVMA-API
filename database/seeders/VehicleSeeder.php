@@ -15,7 +15,7 @@ class VehicleSeeder extends Seeder
     {
         Vehicle::factory()
             ->count(8)
-            ->hasOrders(10)
+            //->hasOrders(10)
             ->create();
     }
 }

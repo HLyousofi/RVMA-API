@@ -28,6 +28,11 @@ class VehicleController extends Controller
         if($request->query('includeQuotes')){
             $vehicles = $vehicles->with('quotes');
         }
+        if($pageSize == 'all'){
+            $vehicles = $vehicles->get();
+            return new VehicleCollection($vehicles);
+    
+        }
         $vehicles = Vehicle::where($queryItems);
         return new VehicleCollection($vehicles->paginate($pageSize)->appends($request->query()));
         
