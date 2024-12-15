@@ -29,7 +29,7 @@ class UpdateCustomerRequest extends FormRequest
                 'adress' => ['required'],
                 'email' => ["required","email","unique:customers,email"],
                 'phone_number' => ['required','unique:customers,phone_number'],
-                'custom_info' => 'nullable'
+                'ice' => 'nullable'
             ];
         }else {
             return [
@@ -38,7 +38,7 @@ class UpdateCustomerRequest extends FormRequest
                 'adress' => 'sometimes|required',
                 'email' => 'sometimes|required|email',
                 'phone_number' => 'sometimes|required',
-                'custom_info' => 'sometimes|nullable'
+                'ice' => 'sometimes|nullable'
             ];
 
         }
@@ -50,11 +50,11 @@ class UpdateCustomerRequest extends FormRequest
                 'phone_number' => $this->phoneNumber
             ]);
         }
-        if($this->customInfo){
-             $this->merge([
-                'custom_info' => $this->customInfo
-            ]);
-        }
+        // if($this->customInfo){
+        //      $this->merge([
+        //         'custom_info' => $this->customInfo
+        //     ]);
+        // }
         
     }
 }
