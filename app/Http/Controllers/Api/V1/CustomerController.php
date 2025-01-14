@@ -45,7 +45,7 @@ class CustomerController extends Controller
     
         }
        
-        return new customerCollection($customers->paginate($pageSize)->appends($request->query()));
+        return new CustomerCollection($customers->paginate($pageSize)->appends($request->query()));
 
        
 

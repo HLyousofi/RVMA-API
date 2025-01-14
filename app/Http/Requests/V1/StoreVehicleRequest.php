@@ -26,7 +26,7 @@ class StoreVehicleRequest extends FormRequest
             'brand' => 'required|string',
             'model' => 'required|string',
             'plate_number' => 'required|string',
-            'fuel_type' => 'required|string'
+            'fueltype_id' => 'required|integer'
         ];
     }
 
@@ -34,7 +34,7 @@ class StoreVehicleRequest extends FormRequest
         return $this->merge([
             'customer_id' => $this->customerId,
             'plate_number' => $this->plateNumber,
-            'fuel_type' => $this->fuelType
+            'fueltype_id' => $this->fuelType
         ]);
     }
 }
