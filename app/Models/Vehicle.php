@@ -14,7 +14,7 @@ class Vehicle extends Model
             'brand',
             'model',
             'plate_number',
-            'fuel_type'        
+            'fueltype_id'        
     ];
 
     public function customer() {
@@ -27,6 +27,10 @@ class Vehicle extends Model
 
     public function quotes() {
         return $this->hasMany(Quote::class);
+    }
+
+    public function fuelType() {
+        return $this->belongsTo(FuelType::class, 'fueltype_id');
     }
 
 

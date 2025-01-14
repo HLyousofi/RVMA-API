@@ -28,7 +28,7 @@ class UpdateVehicleRequest extends FormRequest
                 'brand' => 'required|string',
                 'model' => 'required|string',
                 'plate_number' => 'required|string',
-                'fuel_type' => 'required|string'
+                'fueltype_id' => 'required|integer'
             ];
         }else {
             return [
@@ -36,7 +36,7 @@ class UpdateVehicleRequest extends FormRequest
                 'brand' => 'sometimes|required|string',
                 'model' => 'sometimes|required|string',
                 'plate_number' => 'sometimes|required|string',
-                'fuel_type' => 'sometimes|required|string'
+                'fueltype_id' => 'sometimes|required|integer'
             ];
         }
     }
@@ -54,7 +54,7 @@ class UpdateVehicleRequest extends FormRequest
         }
         if($this->fuelType){ 
             $this->merge([
-                'fuel_type' => $this->fuelType
+                'fueltype_id' => $this->fuelType
             ]);
         }
     }

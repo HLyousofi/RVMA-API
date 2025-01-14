@@ -33,7 +33,8 @@ class VehicleController extends Controller
             return new VehicleCollection($vehicles);
     
         }
-        $vehicles = Vehicle::where($queryItems);
+        
+       // $vehicles = Vehicle::where($queryItems);
         return new VehicleCollection($vehicles->paginate($pageSize)->appends($request->query()));
         
     }
