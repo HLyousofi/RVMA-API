@@ -11,8 +11,10 @@ class Quote extends Model
 
     protected $fillable = [    
         'vehicle_id',   
-        'amount' ,
-        'status' ,
+        'status',
+        'creation_date',
+        'expiration_date',
+        'comment'
     ];
 
     public function orders() {

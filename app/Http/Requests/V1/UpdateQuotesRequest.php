@@ -24,24 +24,40 @@ class UpdateQuotesRequest extends FormRequest
         $method = $this->method();
         if($method == 'PUT'){
             return [
-                'vehicle_id' => 'required|integer|exists:vehicles,id',   
-                'amount' => 'required|numeric',
-                'status' => 'required',
+                'vehicle_id' => 'required|integer|exists:vehicles,id',
+                'status' => 'required|string|in:draft,pending,approved,rejected',
+                'creation_date'=> 'required|date|date_format:Y-m-d',
+                'expiration_date'=> 'required|date|after_or_equal:creation_date',   
+                'comment' => 'nullable|string|max:1000',
             ];
         }else {
             return [
-                'vehicle_id' => 'sometimes|required|integer|exists:vehicles,id',   
-                'amount' => 'sometimes|required|numeric',
-                'status' => 'sometimes|required',
+                'vehicle_id' => 'sometimes|integer|exists:vehicles,id',
+                'status' => 'sometimes|string|in:draft,pending,approved,rejected',
+                'creation_date'=> 'sometimes|date',
+                'expiration_date'=> 'sometimes|date|after_or_equal:creation_date', 
+                'comment' => 'nullable|string|max:1000',
             ];
         }
     }
 
-    public function prepareForValidation() {
-        if($this->vehicleId){
-            $this->merge([
-                'vehicle_id' => $this->vehicleId
-            ]);
-        }
+    public function prepareForValidation()
+    {
+            if($this->vehicleId){
+                $this->merge([
+                    'vehicle_id' => $this->vehicleId
+                ]);
+            }
+            if($this->creationDate){
+                $this->merge([
+                    'creation_date' => $this->creationDate
+                ]);
+            }
+
+            if($this->expirationDate){
+                $this->merge([
+                    'expiration_date' => $this->expirationDate
+                ]);
+            }
     }
 }
