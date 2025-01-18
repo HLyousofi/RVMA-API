@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class FuelType extends Model
+class CarBrand extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'fuel_type'
+        'label'
     ];
 
     public function vehicles() {

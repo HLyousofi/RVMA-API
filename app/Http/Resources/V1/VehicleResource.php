@@ -4,6 +4,10 @@ namespace App\Http\Resources\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\V1\CarBrandResource;
+use App\Http\Resources\V1\FuelTypeResource;
+
+
 
 class VehicleResource extends JsonResource
 {
@@ -21,15 +25,14 @@ class VehicleResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'brand' => $this->brand,
+            'brand' => new CarBrandResource($this->brand),
             'model' => $this->model,
             'plateNumber' => $this->plate_number,
-            'fuelTypeId' => $this->fuelType->id,
-            'fuelType' => $this->fuelType->fuel_type,
+            'fuelType' => new FuelTypeResource($this->fuelType),
             'customerName' => $customerName,
             'customerId' => $customerId,
-            'orders' => OrderResource::collection($this->whenLoaded('orders')),
-            'quotes' => QuoteResource::collection($this->whenLoaded('quotes'))
+            // 'orders' => OrderResource::collection($this->whenLoaded('orders')),
+            // 'quotes' => QuoteResource::collection($this->whenLoaded('quotes'))
             
         ];
     }
