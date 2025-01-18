@@ -11,7 +11,7 @@ class Vehicle extends Model
 
     protected $fillable = [
             'customer_id',
-            'brand',
+            'brand_id',
             'model',
             'plate_number',
             'fueltype_id'        
@@ -31,6 +31,10 @@ class Vehicle extends Model
 
     public function fuelType() {
         return $this->belongsTo(FuelType::class, 'fueltype_id');
+    }
+
+    public function brand() {
+        return $this->belongsTo(CarBrand::class, 'brand_id');
     }
 
 

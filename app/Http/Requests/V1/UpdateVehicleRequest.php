@@ -25,7 +25,7 @@ class UpdateVehicleRequest extends FormRequest
         if($method == 'PUT'){
             return [
                 'customer_id' => 'required|integer|exists:customers,id',
-                'brand' => 'required|string',
+                'brand' => 'required|integer',
                 'model' => 'required|string',
                 'plate_number' => 'required|string',
                 'fueltype_id' => 'required|integer'
@@ -33,7 +33,7 @@ class UpdateVehicleRequest extends FormRequest
         }else {
             return [
                 'customer_id' => 'sometimes|required|integer|exists:customers,id',
-                'brand' => 'sometimes|required|string',
+                'brand' => 'sometimes|required|integer',
                 'model' => 'sometimes|required|string',
                 'plate_number' => 'sometimes|required|string',
                 'fueltype_id' => 'sometimes|required|integer'
@@ -55,6 +55,11 @@ class UpdateVehicleRequest extends FormRequest
         if($this->fuelType){ 
             $this->merge([
                 'fueltype_id' => $this->fuelType
+            ]);
+        }
+        if($this->brand){ 
+            $this->merge([
+                'brand_id' => $this->brand
             ]);
         }
     }
