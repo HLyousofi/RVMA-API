@@ -22,15 +22,19 @@ class StoreQuotesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vehicle_id' => 'required|integer|exists:vehicles,id',   
-            'amount' => 'required|numeric',
-            'status' => 'required',
+            'vehicle_id' => 'required|integer|exists:vehicles,id',
+            'creation_date'=> 'required|date',
+            'expiration_date'=> 'required|date|after_or_equal:creation_date',   
+            'status' => 'string|in:draft,pending,approved,rejected',
+            'comment' => 'nullable|string|max:1000',
         ];
     }
 
     public function prepareForValidation() {
         $this->merge([
-            'vehicle_id' => $this->vehicleId
+            'vehicle_id' => $this->vehicleId,
+            'creation_date' => $this->creationDate,
+            'expiration_date' => $this->expirationDate
         ]);
     }
 }
