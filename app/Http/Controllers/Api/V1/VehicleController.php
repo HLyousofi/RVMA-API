@@ -52,7 +52,9 @@ class VehicleController extends Controller
      */
     public function store(StoreVehicleRequest $request)
     {
-        return new VehicleResource(Vehicle::create($request->all()));
+        $validatedData = $request->validated();
+
+        return new VehicleResource(Vehicle::create($validatedData));
     }
 
     /**
@@ -80,7 +82,8 @@ class VehicleController extends Controller
      */
     public function update(UpdateVehicleRequest $request, Vehicle $vehicle)
     {
-        $vehicle->update($request->all());
+        $validatedData = $request->validated();
+        $vehicle->update($validatedData);
     }
 
     /**

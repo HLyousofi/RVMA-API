@@ -23,7 +23,7 @@ class StoreVehicleRequest extends FormRequest
     {
         return [
             'customer_id' => 'required|integer|exists:customers,id',
-            'brand' => 'required|integer',
+            'brand_id' => 'required|integer',
             'model' => 'required|string',
             'plate_number' => 'required|string',
             'fueltype_id' => 'required|integer'
