@@ -33,7 +33,9 @@ class ProductController extends Controller
      */
     public function store(StoreProductRequest $request)
     {
-        return new ProductResource(Product::create($request->all()));
+        // $product = Product::create($request->validated());
+        // return response()->json(['message' => 'Product created successfully', 'product' => $product], 201);
+        return new ProductResource(Product::create($request->validated()));
     }
 
     /**
@@ -57,7 +59,7 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
-        $product->update($request->all());
+        $product->update($request->validated());
     }
 
     /**

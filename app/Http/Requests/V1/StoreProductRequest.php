@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -11,7 +11,7 @@ class StoreProductRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,12 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'category_id' => 'required|exists:categories,id',
+            'name' => 'required|string|max:255|unique:products,name',
+            'description' => 'nullable|string',
+            'referance' => 'required|string|max:100|unique:products,referance',
+            'price' => 'required|numeric|min:0',
+            'unitInStock' => 'required|integer|min:0'
         ];
     }
 }
