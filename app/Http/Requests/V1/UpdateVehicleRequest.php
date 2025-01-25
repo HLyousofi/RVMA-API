@@ -33,7 +33,7 @@ class UpdateVehicleRequest extends FormRequest
         }else {
             return [
                 'customer_id' => 'sometimes|required|integer|exists:customers,id',
-                'brand' => 'sometimes|required|integer',
+                'brand_id' => 'sometimes|required|integer',
                 'model' => 'sometimes|required|string',
                 'plate_number' => 'sometimes|required|string',
                 'fueltype_id' => 'sometimes|required|integer'
