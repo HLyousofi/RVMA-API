@@ -9,13 +9,22 @@ class Product extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'category_id',
+        'name' ,
+        'description' ,
+        'referance',
+        'price',
+        'unitInStock'
+        ];
+
     public function caterory() {
         return $this->belongsTo(Caterory::class);
     }
 
-    public function orders() {
-        return $this->belongsToMany(Order::class, 'order_products');
-    }
+    // public function orders() {
+    //     return $this->belongsToMany(Order::class, 'order_products');
+    // }
 
     public function transactions() {
         return $this->hasMany(Transaction::class);
