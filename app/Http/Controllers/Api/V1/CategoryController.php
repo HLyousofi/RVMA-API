@@ -19,7 +19,8 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $category = categoryCollection(Category::all());
+        $categories = Category::all();
+        return response()->json(CategoryResource::collection($categories));
     }
 
     /**
@@ -35,7 +36,7 @@ class CategoryController extends Controller
      */
     public function store(StoreCategoryRequest $request)
     {
-        return new CategoryResource(Category::create($request->all()));
+        return new CategoryResource(Category::create($request->validated()));
     }
 
     /**
@@ -49,18 +50,18 @@ class CategoryController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Category $category, UpdateCategoryRequest $request)
-    {
-        $category->update($request->all());
-    }
+    // public function edit(Category $category, UpdateCategoryRequest $request)
+    // {
+
+    // }
 
     /**
      * Update the specified resource in storage.
      */
-    // public function update(UpdateCategoryRequest $request, Category $category)
-    // {
-    //     //
-    // }
+    public function update(UpdateCategoryRequest $request, Category $category)
+    {
+        return new CategoryResource($category->update($request->validated()));
+    }
 
     /**
      * Remove the specified resource from storage.
