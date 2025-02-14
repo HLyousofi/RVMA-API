@@ -30,4 +30,10 @@ class StoreProductRequest extends FormRequest
             'unitInStock' => 'required|integer|min:0'
         ];
     }
+
+    public function prepareForValidation() {
+        $this->merge([
+            'category_id' => $this->categoryId
+        ]);
+    }
 }

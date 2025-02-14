@@ -23,6 +23,7 @@ class ProductResource extends JsonResource
             'referance' => $this->referance,
             'price' => $this->price,
             'unitInStock' => $this->unitInStock,
+            'category' => new CategoryResource($this->category)
         ];
     }
 }

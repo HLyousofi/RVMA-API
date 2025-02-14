@@ -5,17 +5,27 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\Quote;
 use App\Http\Requests\V1\StoreQuotesRequest;
 use App\Http\Requests\V1\UpdateQuotesRequest;
+use App\Http\Requests\V1\StoreQuoteProductRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\QuoteCollection;
 use App\Http\Resources\V1\QuoteResource;
 use App\Filters\V1\QuoteFilter;
 use Illuminate\Http\Request;
+use App\services\QuoteService;
 
 class QuoteController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
+     protected $quoteService;
+
+    public function __construct(QuoteService $quoteService)
+    {
+        $this->quoteService = $quoteService;
+    }
+
     public function index(Request $request)
     {
         $filter = new QuoteFilter();
@@ -40,9 +50,20 @@ class QuoteController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreQuotesRequest $request)
-    {
-        return new QuoteResource(Quote::create($request->all()));
+    public function store(StoreQuotesRequest $quoteRequest, StoreQuoteProductRequest $productRequest)
+    {     
+         // Récupérer les données validées
+        $quoteData = $quoteRequest->validated();
+        $productData = $productRequest->validated();
+        try {
+            // Créer le devis en utilisant le service
+            $quote = $this->quoteService->createQuote($quoteData, $productData['quoteProducts']);
+
+            return response()->json(['quote' => $quote], 201);
+        } catch (\Exception $e) {
+            // Gestion d'erreur
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     /**

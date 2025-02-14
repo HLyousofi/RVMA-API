@@ -9,6 +9,8 @@ class QuoteProduct extends Model
 {
     use HasFactory;
 
+    protected $table = 'quote__product';
+
     protected $fillable = [    
         'quote_id',   
         'product_id',
