@@ -18,8 +18,8 @@ class Product extends Model
         'unitInStock'
         ];
 
-    public function caterory() {
-        return $this->belongsTo(Caterory::class);
+    public function category() {
+        return $this->belongsTo(Category::class);
     }
 
     // public function orders() {
