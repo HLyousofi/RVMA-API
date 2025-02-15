@@ -15,7 +15,7 @@ class Product extends Model
         'description' ,
         'referance',
         'price',
-        'unitInStock'
+        // 'unitInStock'
         ];
 
     public function category() {
