@@ -22,18 +22,27 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'category_id' => 'required|exists:categories,id',
             'name' => 'required|string|max:255|unique:products,name',
+            'category_id' => [
+                'nullable',  // Allow null if category is optional
+                'integer',
+                'exists:categories,id' // Ensures category_id exists in categories table
+            ],
+            'category_id'=> 'nullable|integer',
+            'brand' => 'nullable|string',
+            'manufacturer_reference' => 'nullable|string|unique:products,manufacturer_reference',
+            'oem_reference'=> 'nullable|string|unique:products,oem_reference',
             'description' => 'nullable|string',
-            'referance' => 'required|string|max:100|unique:products,referance',
-            'price' => 'required|numeric|min:0',
-            'unitInStock' => 'required|integer|min:0'
+            'model' => 'nullable|string|max:100',
+            // 'purchase_price' => 'nullable|numeric|min:0',
+            // 'sale_price' => 'nullable|numeric|min:0'
         ];
     }
 
     public function prepareForValidation() {
         $this->merge([
-            'category_id' => $this->categoryId
+            'manufacturer_reference' => $this->manufacturerReference,
+            'oem_reference' => $this->oemReference
         ]);
     }
 }

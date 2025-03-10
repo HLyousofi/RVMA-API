@@ -41,5 +41,6 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1', 'm
     Route::apiResource('carBrands', CarBrandController::class);
     Route::apiResource('quotes', QuoteController::class);
     Route::apiResource('stocks', StockController::class);
+    Route::apiResource('transactions', TransactionController::class);
   
 });

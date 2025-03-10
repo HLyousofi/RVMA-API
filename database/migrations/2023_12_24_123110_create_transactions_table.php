@@ -18,7 +18,6 @@ return new class extends Migration
             $table->date('reseption_date');
             $table->float('unit_price');
             $table->integer('quantity');
-            $table->string('type');
             $table->timestamps();
         });
     }

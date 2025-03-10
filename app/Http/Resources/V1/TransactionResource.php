@@ -18,10 +18,16 @@ class TransactionResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'receptionDate' => $this->reception_date,
-            'unitPrice' => $this->unit_price,
+            'productId' => $this->product_id,
+            'supplierId' => $this->supplier_id,
+            'referenceId' => $this->reference_id,
+            'transactionType' => $this->transaction_type,
             'quantity' => $this->quantity,
-            'type' => $this->type
+            'transactionDate' => $this->transaction_date,
+            'purchasePrice' => $this->purchase_price,
+            'selling_price' => $this->selling_price,
+            'notes' => $this->notes
+           
         ];
     }
 }
