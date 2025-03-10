@@ -7,6 +7,7 @@ use App\Http\Requests\V1\StoreTransactionRequest;
 use App\Http\Requests\V1\UpdateTransactionRequest;
 use App\Http\Resources\V1\TransactionResource;
 use App\Http\Resources\V1\TransactionCollection;
+use App\Services\TransactionService;
 use App\Http\Controllers\Controller;
 
 
@@ -15,6 +16,11 @@ class TransactionController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public function __construct(TransactionService $transactionService) {
+        $this->transactionService = $transactionService;
+    }
+
+
     public function index()
     {
         return new TransactionCollection(Transaction::all());
@@ -33,7 +39,13 @@ class TransactionController extends Controller
      */
     public function store(StoreTransactionRequest $request)
     {
-        return new TransactionResource(Transaction::create($request->all()));
+        try {
+            
+            $transaction = $this->transactionService->createTransaction($request->validated());
+            return new TransactionResource($transaction);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 
     /**
@@ -57,7 +69,12 @@ class TransactionController extends Controller
      */
     public function update(UpdateTransactionRequest $request, Transaction $transaction)
     {
-        $transaction->update($request->all());
+        try {
+            $transaction = $this->transactionService->updateTransaction($transaction, $request->validated());
+            return new TransactionResource($transaction);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 400);
+        }
     }
 
     /**

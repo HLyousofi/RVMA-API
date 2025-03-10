@@ -10,12 +10,17 @@ class Product extends Model
     use HasFactory;
 
     protected $fillable = [
-        'category_id',
         'name' ,
+        'category_id',
+        'brand',
+        'model',
+        'manufacturer_reference',
+        'oem_reference',
         'description' ,
-        'referance',
-        'price',
-        // 'unitInStock'
+        // 'referance',
+        'purchase_price',
+        'sale_price'
+        
         ];
 
     public function category() {
@@ -28,6 +33,10 @@ class Product extends Model
 
     public function transactions() {
         return $this->hasMany(Transaction::class);
+    }
+
+    public function stocks() {
+        return $this->hasMany(Stock::class);
     }
 
 

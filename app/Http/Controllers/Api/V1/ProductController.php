@@ -17,7 +17,7 @@ class ProductController extends Controller
      */
     public function index()
     {
-        return new productCollection(Product::all());
+        return new productCollection(Product::withSum('stocks', 'quantity')->get());
     }
 
     /**
@@ -43,7 +43,7 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
-        return new ProductResource($product);
+        return new ProductResource($product->load('stocks'));
     }
 
     /**
@@ -59,6 +59,7 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
+       
         $product->update($request->validated());
     }
 

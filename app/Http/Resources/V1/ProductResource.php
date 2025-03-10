@@ -19,11 +19,17 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'brand' => $this->brand,
+            'oemReference' => $this->oem_reference,
+            'manufacturerReference' => $this->manufacturer_reference,
             'description' => $this->description,
             'referance' => $this->referance,
-            'price' => $this->price,
-            'unitInStock' => $this->unitInStock,
-            'category' => new CategoryResource($this->category)
+            'purchasePrice' => $this->purchase_price,
+            'sellingPrice' => $this->selling_price,
+            'totalStock' => $this->stocks->sum('quantity'),
+            'category' => new CategoryResource($this->category),
+            // 'stock' => new StockResource($this->stock)
+            
         ];
     }
 }
