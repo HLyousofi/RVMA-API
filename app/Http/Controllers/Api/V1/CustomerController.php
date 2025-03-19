@@ -23,32 +23,17 @@ class CustomerController extends Controller
         $filter = new CustomerFilter();
         $queryItems = $filter->transform($request);
         $pageSize = $request->query('pageSize');
-        $includeInvoices = $request->query('includeInvoices');
-        $includeVehicles = $request->query('includeVehicles');
-        $customers = Customer::where($queryItems);
-        if($includeInvoices){
-            $customers = $customers->with('invoices');
-        }
-        if($includeVehicles){
-            $customers = $customers->with('vehicles');
-        }
-        if($pageSize == 'all'){
-            $customers = $customers->get();
-            $selectedProperties = $customers->map(function ($customer) {
-                return [
-                    'id' => $customer->id,
-                    'label' => $customer->name,
-                ];
-            });
-            
-            return  $selectedProperties->toArray();
-    
-        }
-       
-        return new CustomerCollection($customers->paginate($pageSize)->appends($request->query()));
+        $customersQuery = Customer::where($queryItems);
 
-       
+        if ($pageSize === 'all') {
+            return CustomerResource::collection($customersQuery->get());
+        }
 
+        // Handle paginated case
+        $pageSize = $pageSize ?? 10; // Default to 10 if not provided
+        $paginatedCustomers = $customersQuery->paginate($pageSize)->appends($request->query());
+
+        return new CustomerCollection($paginatedCustomers);
     }
 
     /**
