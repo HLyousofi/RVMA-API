@@ -8,6 +8,8 @@ use App\Http\Requests\V1\UpdateProductRequest;
 use App\Http\Resources\V1\ProductResource;
 use App\Http\Resources\V1\ProductCollection;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+
 
 
 class ProductController extends Controller
@@ -15,9 +17,21 @@ class ProductController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return new productCollection(Product::withSum('stocks', 'quantity')->get());
+        $pageSize = $request->query('pageSize');
+        $productsQuery = Product::query();
+
+        if ($pageSize === 'all') {
+            return ProductResource::collection($productsQuery->get());
+        }
+
+        // Handle paginated case
+        $pageSize = $pageSize ?? 15; // Default to 10 if not provided
+        $paginatedproducts = $productsQuery->paginate($pageSize)->appends($request->query());
+
+        return new ProductCollection($paginatedproducts);
+        // return new productCollection(Product::withSum('stocks', 'quantity')->get());
     }
 
     /**

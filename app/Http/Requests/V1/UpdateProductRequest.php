@@ -43,9 +43,9 @@ class UpdateProductRequest extends FormRequest
             ],
             // 'brand' => 'sometimes|string|max:255',
             // 'model' => 'sometimes|string|max:255',
-            // 'manufacturer_reference' => 'sometimes|string|max:255',
-            // 'oem_reference' => 'sometimes|string|max:255',
-            // 'description' => 'sometimes|string',
+             'manufacturer_reference' => ['nullable','string','max:255', Rule::unique('products', 'manufacturer_reference')->ignore($productId)],
+             'oem_reference' => ['nullable','string','max:255', Rule::unique('products', 'oem_reference')->ignore($productId)],
+             'description' => 'nullable|string',
         ];
     }
 
@@ -71,8 +71,6 @@ class UpdateProductRequest extends FormRequest
     }
    
     public function prepareForValidation() {
-       
-            
             if($this->categoryId){
                 $this->merge([
                     'category_id' => $this->categoryId
@@ -82,7 +80,8 @@ class UpdateProductRequest extends FormRequest
                 $this->merge([
                     'oem_reference' => $this->oemReference
                 ]);
-            }if($this->manufacturerReference){
+            }
+            if($this->manufacturerReference){
                 $this->merge([
                     'manufacturer_reference' => $this->manufacturerReference
                 ]);

@@ -14,17 +14,35 @@ class CustomerResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // return parent::toArray($request);
-        return [
+        $base = [
             'id' => $this->id,
-            'name' => $this->name,
-            'type' => $this->type,
-            'adress' => $this->adress,
-            'email' => $this->email,
-            'phoneNumber' => $this->phone_number,
-            'ice' => $this->ice,
-            'invoices' => InvoiceResource::collection($this->whenLoaded('invoices')),
-            'vehicles' => VehicleResource::collection($this->whenLoaded('vehicles')),
+            'label' => $this->name,
         ];
+
+        // Add extra fields only if not for autocomplete
+        if ($request->query('pageSize') !== 'all') {
+            $base = array_merge($base, [
+                'id' => $this->id,
+                'name' => $this->name,
+                'type' => $this->type,
+                'adress' => $this->adress,
+                'email' => $this->email,
+                'phoneNumber' => $this->phone_number,
+                'ice' => $this->ice,
+            ]);
+        }
+
+        return $base;
+        // return [
+        //     'id' => $this->id,
+        //     'name' => $this->name,
+        //     'type' => $this->type,
+        //     'adress' => $this->adress,
+        //     'email' => $this->email,
+        //     'phoneNumber' => $this->phone_number,
+        //     'ice' => $this->ice,
+        //     // 'invoices' => InvoiceResource::collection($this->whenLoaded('invoices')),
+        //     // 'vehicles' => VehicleResource::collection($this->whenLoaded('vehicles')),
+        // ];
     }
 }
