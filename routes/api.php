@@ -20,14 +20,13 @@ use Illuminate\Support\Facades\Route;
 // });
 
 Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1'], function(){
-    Route::post('login', 'LoginController@login');
-
+    Route::post('/login', 'AuthController@login');
 });
 
 
 
 Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1', 'middleware' => 'auth:sanctum'], function() {
-    Route::get('logout', 'LoginController@logout');
+    Route::get('/logout', 'AuthController@logout');
     Route::apiResource('users', UserController::class);
     Route::apiResource('customers', CustomerController::class);
     Route::apiResource('invoices', InvoiceController::class);
