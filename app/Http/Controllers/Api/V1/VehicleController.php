@@ -21,21 +21,20 @@ class VehicleController extends Controller
         $filter = new VehicleFilter();
         $queryItems = $filter->transform($request);
         $pageSize = $request->query('pageSize');
-        $vehicles = Vehicle::where($queryItems);
-        if($request->query('includeOrders')){
-            $vehicles = $vehicles->with('orders');
+        // $vehicles = Vehicle::where($queryItems);
+        $vehcilesQuery = Vehicle::query();
+        if ($pageSize === 'all') {
+            return VehicleResource::collection($vehcilesQuery->get());
         }
-        if($request->query('includeQuotes')){
-            $vehicles = $vehicles->with('quotes');
-        }
-        if($pageSize == 'all'){
-            $vehicles = $vehicles->get();
-            return new VehicleCollection($vehicles);
-    
-        }
+
+        // Handle paginated case
+        $pageSize = $pageSize ?? 15; // Default to 10 if not provided
+        $paginatedvehciles = $vehcilesQuery->paginate($pageSize)->appends($request->query());
+
+        return new VehicleCollection($paginatedvehciles);
         
        // $vehicles = Vehicle::where($queryItems);
-        return new VehicleCollection($vehicles->paginate($pageSize)->appends($request->query()));
+        // return new VehicleCollection($vehicles->paginate($pageSize)->appends($request->query()));
         
     }
 

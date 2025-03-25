@@ -5,7 +5,7 @@ namespace App\Http\Resources\V1;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class QuoteProductResource extends JsonResource
+class WorkOrderProductResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -23,8 +23,9 @@ class QuoteProductResource extends JsonResource
             'unitPrice' => $this->unitPrice,
             'line_price' => $this->linePrice,
             // 'product' => new ProductResource($this->whenLoaded('product')),
-            // 'quote' => new QuoteResource($this->whenLoaded('quote')),
+            // 'quote' => new WorkOrderResource($this->whenLoaded('quote')),
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
         ];
+        
     }
 }

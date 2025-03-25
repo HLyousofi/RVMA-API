@@ -5,7 +5,7 @@ namespace App\Filters\V1;
 use App\Filters\ApiFilter;
 
 
-class QuoteFilter extends ApiFilter {
+class WorkOrderFilter extends ApiFilter {
     
     protected $safeParms = [
         'amount' => ['gt', 'gte', 'eq', 'lt', 'lte'],
