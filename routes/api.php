@@ -32,14 +32,13 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1', 'm
     Route::apiResource('customers', CustomerController::class);
     Route::apiResource('invoices', InvoiceController::class);
     Route::apiResource('vehicles', VehicleController::class);
-    Route::apiResource('orders', OrderController::class);
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('products', ProductController::class);
     Route::apiResource('supplier', SupplierController::class);
     Route::apiResource('transaction', TransactionController::class);
     Route::apiResource('fueltypes', FuelTypeController::class);
     Route::apiResource('carBrands', CarBrandController::class);
-    Route::apiResource('quotes', QuoteController::class);
+    Route::apiResource('workOrder', WorkOrderController::class);
     Route::apiResource('stocks', StockController::class);
     Route::apiResource('transactions', TransactionController::class);
   

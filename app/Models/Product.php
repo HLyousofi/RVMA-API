@@ -27,16 +27,19 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    // public function orders() {
-    //     return $this->belongsToMany(Order::class, 'order_products');
-    // }
-
     public function transactions() {
         return $this->hasMany(Transaction::class);
     }
 
     public function stocks() {
         return $this->hasMany(Stock::class);
+    }
+
+    public function quotes()
+    {
+        return $this->belongsToMany(WorkOrder::class, 'workOrder_product')
+                    ->withPivot('quantity', 'unit_price')
+                    ->withTimestamps();
     }
 
 
