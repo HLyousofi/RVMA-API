@@ -13,6 +13,8 @@ use App\Filters\V1\WorkOrderFilter;
 use Illuminate\Http\Request;
 use App\services\WorkOrderService;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 
 class WorkOrderController extends Controller
 {
@@ -178,8 +180,41 @@ class WorkOrderController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(WorkOrders $workOrders)
+    public function destroy(WorkOrders $workOrder)
     {
         //
     }
+
+    public function downloadPdf($id)
+{
+    try {
+        
+        $workOrder = Workorder::with(['products', 'vehicle.brand', 'customer'])->findOrFail($id);
+
+
+        // Charger toutes les relations nécessaires
+        // $workOrder->loadMissing(['products', 'vehicle.brand', 'vehicle.fuelType', 'customer']);
+
+        // Préparer les données pour la vue
+        $data = [
+            'workOrder' => $workOrder, // Utiliser le modèle brut, pas une ressource
+            'totalTTC' => $workOrder->total * 1.20, // TVA 20%
+        ];
+
+        // Générer le PDF à partir de la vue
+        $pdf = Pdf::loadView('pdf.quote', $data);
+
+        // Télécharger le PDF
+        return $pdf->stream('devis-' . $workOrder->workorderNumber . '.pdf');
+    } catch (\Exception $e) {
+        // Log l’erreur pour le débogage
+        \Log::error('Erreur lors de la génération du PDF : ' . $e->getMessage());
+
+        // Retourner une réponse d’erreur (facultatif, selon ton besoin)
+        return response()->json([
+            'message' => 'Échec de la génération du PDF',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 }
