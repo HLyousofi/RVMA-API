@@ -42,6 +42,7 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1', 'm
     Route::apiResource('workOrder', WorkOrderController::class);
     Route::apiResource('stocks', StockController::class);
     Route::apiResource('transactions', TransactionController::class);
+    Route::apiResource('settings', SettingController::class);
     Route::post('/workorders/{id}/pdf', [WorkOrderController::class, 'downloadPdf'])->name('downloadPdf');
   
 });
