@@ -26,8 +26,8 @@ class StoreSettingsRequest extends FormRequest
             'address' => 'nullable|string',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
-            'ice_number' => 'nullable|string|max:14',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            'ice_number' => 'nullable|string|max:20',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg|max:50'
         ];
     }
 

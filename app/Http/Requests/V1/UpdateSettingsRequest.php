@@ -27,7 +27,7 @@ class UpdateSettingsRequest extends FormRequest
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'ice_number' => 'nullable|string|max:14',
-            'logo_path' => 'nullable|image|mimes:jpeg,png,jpg|max:2048'
+            'logo_path' => 'nullable|image|mimes:jpeg,png,jpg|max:50'
         ];
     }
 
