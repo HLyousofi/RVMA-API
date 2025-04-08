@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Http\Requests\V1\StoreWorkOrderRequest;
 use App\Http\Requests\V1\UpdateWorkOrderRequest;
 use App\Http\Requests\V1\StoreWorkOrderProductRequest;
+use App\Http\Requests\V1\UpdateWorkOrderProductRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\WorkOrderCollection;
 use App\Http\Resources\V1\WorkOrderResource;
@@ -130,7 +131,7 @@ class WorkOrderController extends Controller
     //     $workOrder->update($request->all());
     // }
 
-    public function update(UpdateWorkOrderRequest $workOrderRequest, StoreWorkOrderProductRequest $productRequest,WorkOrder $workOrder )
+    public function update(UpdateWorkOrderRequest $workOrderRequest, UpdateWorkOrderProductRequest $productRequest,WorkOrder $workOrder )
     {     
         try {
             // Start a database transaction
@@ -144,7 +145,7 @@ class WorkOrderController extends Controller
                 $workOrder->update($workOrderData);
 
                 // Si des produits sont fournis, mettre à jour la relation
-                if (isset($productData['productsWorkOrder'])) {
+                if (isset($productData['productsWorkOrder']) && $productData['productsWorkOrder'] != [] ) {
                     // Préparer les données des produits pour la table pivot
                     $productWorkOrders = collect($productData['productsWorkOrder'])->mapWithKeys(function ($item) {
                         return [

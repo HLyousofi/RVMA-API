@@ -34,6 +34,7 @@ class UpdateWorkOrderRequest extends FormRequest
         ];
     }
 
+
     /**
      * Get custom messages for validation errors.
      *
@@ -56,12 +57,23 @@ class UpdateWorkOrderRequest extends FormRequest
      */
     public function prepareForValidation()
     {
-        // Normaliser les données principales
-        $this->merge([
-            'customer_id' => $this->customerId ?? $this->customer_id,
-            'vehicle_id' => $this->vehicleId ?? $this->vehicle_id,
-            'expiration_date' => $this->expirationDate ?? $this->expiration_date,
-        ]);
+      
+        if($this->expirationDate){
+            $this->merge([
+               'expiration_date' => $this->expirationDate
+           ]);
+       }
+
+        if($this->customerId){
+            $this->merge([
+               'customer_id' => $this->customerId
+           ]);
+       }
+       if($this->vehicleId){
+           $this->merge([
+              'vehicle_id' => $this->vehicleId
+          ]);
+        }
 
         // Normaliser les dates optionnelles
         if ($this->orderDate || $this->order_date) {

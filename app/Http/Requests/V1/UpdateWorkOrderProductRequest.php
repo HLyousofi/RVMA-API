@@ -4,7 +4,7 @@ namespace App\Http\Requests\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateQuoteProductRequest extends FormRequest
+class UpdateWorkOrderProductRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,42 +22,42 @@ class UpdateQuoteProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'productsQuote' => 'sometimes|array',
-            'productsQuote.*.productId' => 'required|integer|exists:products,id',
-            'productsQuote.*.quantity' => 'sometimes|integer|min:1',
-            'productsQuote.*.price' => 'sometimes|numeric|min:0',
+            'productsWorkOrder' => 'sometimes|array',
+            'productsWorkOrder.*.product_id' => 'sometimes|integer|exists:products,id',
+            'productsWorkOrder.*.quantity' => 'sometimes|integer|min:1',
+            'productsWorkOrder.*.unit_price' => 'sometimes|numeric|min:0',
         ];
     }
 
     public function messages(): array
     {
         return [
-            'productsQuote.*.productId.required' => 'The product ID is required.',
-            'productsQuote.*.productId.exists' => 'The selected product does not exist.',
-            'productsQuote.*.quantity.min' => 'The quantity must be at least 1.',
-            'productsQuote.*.price.numeric' => 'The price must be a number.',
-            'productsQuote.*.price.min' => 'The price cannot be negative.',
+            'productsWorkOrder.*.product_id.required' => 'The product ID is required.',
+            'productsWorkOrder.*.product_id.exists' => 'The selected product does not exist.',
+            'productsWorkOrder.*.quantity.min' => 'The quantity must be at least 1.',
+            'productsWorkOrder.*.unit_price.numeric' => 'The price must be a number.',
+            'productsWorkOrder.*.unit_price.min' => 'The price cannot be negative.',
         ];
     }
 
     public function prepareForValidation()
     {   
         // Get the productsQuote array from the request
-        $productsQuote = $this->input('productsQuote', []);
+        $productsWorkOrder = $this->input('productsWorkOrder', []);
 
         // Transform each product quote
-        $transformedproductsQuote = array_map(function ($item) {
+        $transformedProductsWorkOrder = array_map(function ($item) {
             return [
                 'quote_id' => $this->input('quote_id') ?? $this->route('quote') ?? null, // Optional: Add quote_id if needed
                 'product_id' => $item['productId'] ?? null,
                 'quantity' => $item['quantity'] ?? null,
-                'unit_price' => $item['price'] ?? null, // Rename "price" to "unit_price"
+                'unit_price' => $item['unitPrice'] ?? null, // Rename "price" to "unit_price"
             ];
-        }, $productsQuote);
+        }, $productsWorkOrder);
 
         // Merge the transformed data back into the request
         $this->merge([
-            'productsQuote' => $transformedproductsQuote,
+            'productsWorkOrder' => $transformedProductsWorkOrder,
         ]);
     }
 }
