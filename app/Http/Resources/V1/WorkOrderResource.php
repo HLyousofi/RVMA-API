@@ -26,6 +26,7 @@ class WorkOrderResource extends JsonResource
             'status' => $this->status,
             'expirationDate' => $this->expiration_date,
             'total' => $this->total,
+            'currentMileage' => $this->current_mileage,
             //'invoice_id' => $this->invoice_id,
             'orderDate' => $this->order_date,
             'deliveryDate' => $this->delivery_date,

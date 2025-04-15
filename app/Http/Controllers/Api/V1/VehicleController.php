@@ -28,7 +28,7 @@ class VehicleController extends Controller
         }
 
         // Handle paginated case
-        $pageSize = $pageSize ?? 15; // Default to 10 if not provided
+        $pageSize = $pageSize ?? 15; // Default to 15 if not provided
         $paginatedvehciles = $vehcilesQuery->paginate($pageSize)->appends($request->query());
 
         return new VehicleCollection($paginatedvehciles);

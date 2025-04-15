@@ -33,21 +33,18 @@ class WorkOrderController extends Controller
 
     public function index(Request $request)
     {
-        $query = WorkOrder::query();
+        $workOrderQuery = WorkOrder::query();
 
-        if ($request->has('type')) {
-            $query->where('type', $request->type);
+        // Check if 'type' exists and is not empty
+        $pageSize = $request->query('pageSize');
+        $pageSize = $pageSize ?? 15; // Default to 15 if not provided
+        if ($request->filled('type')) {
+            $workOrderQuery->where('type', $request->input('type'));
         }
+        $paginatedWorkOrder= $workOrderQuery->paginate($pageSize)->appends($request->query());
 
-        return new WorkOrderCollection($query->paginate()->appends($request->query()));
-        // $query = WorkOrder::query();
-
-        // if ($request->has('type')) {
-        //     $query->where('type', $request->type);
-        // }
-       
-         
-        // return new WorkOrderCollection($workOrders->paginate()->appends($request->query()));
+        // Paginate and append query parameters to pagination links
+        return new WorkOrderCollection($paginatedWorkOrder);
     }
 
     /**
@@ -70,6 +67,9 @@ class WorkOrderController extends Controller
                 // Get validated data
                 $workOrderData = $workOrderRequest->validated();
                 $productData = $productRequest->validated();
+                if( $workOrderData['type'] == 'order') {
+                    $workOrderData['order_date'] = now()->toDateTimeString();
+                }
                 // Create the workOrder
                 $workOrder = WorkOrder::create($workOrderData);
 
@@ -140,6 +140,13 @@ class WorkOrderController extends Controller
                 // Get validated data
                 $workOrderData = $workOrderRequest->validated();
                 $productData = $productRequest->validated();
+               // Check if status is 'converted' using array syntax
+                if ($workOrderData['status'] === 'converted') {
+                    $workOrderData['status'] = 'pending';
+                    $workOrderData['type'] = 'order';
+                    $workOrderData['quote_number'] = $workOrder['workorder_number'];
+                    $workOrderData['order_date'] = now();
+                }
 
                 // Mettre à jour les données principales du WorkOrder
                 $workOrder->update($workOrderData);

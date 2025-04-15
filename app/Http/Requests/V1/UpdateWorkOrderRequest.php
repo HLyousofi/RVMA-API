@@ -22,15 +22,17 @@ class UpdateWorkOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'quote_number' => 'sometimes',
             'customer_id' => 'sometimes|integer|exists:customers,id', // "sometimes" rend le champ optionnel
             'vehicle_id' => 'sometimes|integer|exists:vehicles,id',
             'type' => 'sometimes|in:quote,order',
             'expiration_date' => 'sometimes|date_format:Y-m-d H:i:s', // Optionnel mais format strict si fourni
-            'total' => 'nullable|numeric|min:0',
+            'total' => 'sometimes|numeric|min:0',
+            'current_mileage' => 'sometimes|numeric|min:0',
             'invoice_id' => 'nullable|exists:invoices,id',
             'order_date' => 'nullable|date',
             'delivery_date' => 'nullable|date|after_or_equal:order_date',
-            'status' => 'sometimes|in:pending,approved,rejected,draft',
+            'status' => 'sometimes|in:pending,approved,rejected,draft,converted,in_progress,completed,to_invoice',
         ];
     }
 
@@ -79,6 +81,11 @@ class UpdateWorkOrderRequest extends FormRequest
         if ($this->orderDate || $this->order_date) {
             $this->merge([
                 'order_date' => $this->orderDate ?? $this->order_date,
+            ]);
+        }
+        if ($this->currentMileage) {
+            $this->merge([
+                'current_mileage' => $this->currentMileage
             ]);
         }
 
