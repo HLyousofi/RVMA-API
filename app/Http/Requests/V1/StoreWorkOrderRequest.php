@@ -22,6 +22,7 @@ class StoreWorkOrderRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'quote_number' => 'nullable',
             'customer_id' => 'required|integer|exists:customers,id',
             'vehicle_id' => 'required|integer|exists:vehicles,id',
             'type' => 'required|in:quote,order',
@@ -29,9 +30,10 @@ class StoreWorkOrderRequest extends FormRequest
             'total' => 'nullable|numeric|min:0',
             'invoice_id' => 'nullable|exists:invoices,id',
             'order_date' => 'nullable|date',
+            'current_mileage' => 'nullable|numeric|min:0',
             'delivery_date' => 'nullable|date|after_or_equal:order_date',
-            'status' => 'nullable|in:pending,approved,rejected,draft',
-            'expiration_date' => 'required|date_format:Y-m-d H:i:s',
+            'status' => 'nullable|in:pending,approved,rejected,draft,converted',
+            'expiration_date' => 'nullable|date_format:Y-m-d H:i:s',
         ];
     
     }
@@ -56,13 +58,14 @@ class StoreWorkOrderRequest extends FormRequest
             'customer_id' => $this->customerId,
             'vehicle_id' => $this->vehicleId,
             'expiration_date' => $this->expirationDate,
+            'current_mileage' => $this->currentMileage
         ]);
 
-        if($this->orderDate){
-            $this-merge([
-                'order_date' => $this->orderDate
-            ]);
-        };
+        // if($this->type == ){
+        //     $this-merge([
+        //         'order_date' => $this->orderDate
+        //     ]);
+        // };
 
         if($this->deliveryDate){
             $this-merge([
