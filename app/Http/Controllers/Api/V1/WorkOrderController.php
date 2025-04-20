@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Models\WorkOrder;
 use App\Models\Setting;
+use App\Models\Invoice;
 use App\Http\Requests\V1\StoreWorkOrderRequest;
 use App\Http\Requests\V1\UpdateWorkOrderRequest;
 use App\Http\Requests\V1\StoreWorkOrderProductRequest;
@@ -147,6 +148,42 @@ class WorkOrderController extends Controller
                     $workOrderData['quote_number'] = $workOrder['workorder_number'];
                     $workOrderData['order_date'] = now();
                 }
+                 // Handle status change to 'invoicing'
+                 if (isset($workOrderData['status']) && $workOrderData['status'] === 'to_invoice') {
+                    // Ensure work order is in a valid state for invoicing
+                    if ($workOrder->status !== 'completed') {
+                        throw new \Exception('Work order must be completed to create an invoice');
+                    }
+                    
+
+                    // Create invoice
+                    $invoice = Invoice::create([
+                        'workorder_id' => $workOrder->id,
+                        'invoice_number' => $this->generateInvoiceNumber(),
+                        'customer_id' => $workOrder->customer_id,
+                        'vehicle_id' => $workOrder->vehicle_id,
+                        'amount' => $workOrder->products->sum(fn($product) => $product->pivot->quantity * $product->pivot->unit_price),
+                        'discount' => 0, // Default, can be updated later
+                        'status' => 'draft',
+                        'billed_date' => null,
+                        'paid_date' => null,
+                    ]);
+
+                    // Copy products from order_product to invoice_product
+                    $invoiceProducts = $workOrder->products->mapWithKeys(function ($product) {
+                        return [
+                            $product->id => [
+                                'quantity' => $product->pivot->quantity,
+                                'unit_price' => $product->pivot->unit_price,
+                            ]
+                        ];
+                    })->all();
+
+                    $invoice->products()->sync($invoiceProducts);
+
+                    // Update work order status to 'invoiced'
+                    $workOrderData['status'] = 'to_invoice';
+                }
 
                 // Mettre à jour les données principales du WorkOrder
                 $workOrder->update($workOrderData);
@@ -171,7 +208,7 @@ class WorkOrderController extends Controller
                 $workOrder->updateTotalPrice();
 
                 return $workOrder;
-            });
+                });
 
             return response()->json([
                 'message' => 'WorkOrder updated successfully',
@@ -189,9 +226,49 @@ class WorkOrderController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(WorkOrders $workOrder)
+    public function destroy(WorkOrder $workOrder)
     {
-        //
+        try {
+            // Check status constraint
+            if ($workOrder->status !== 'draft') {
+                return response()->json([
+                    'message' => 'Cannot delete work order. Only draft work orders can be deleted.',
+                ], 403);
+            }
+
+            // Check for related invoices
+            if ($workOrder->invoice()->exists()) {
+                return response()->json([
+                    'message' => 'Cannot delete work order. It has associated invoices.',
+                ], 403);
+            }
+
+            // Delete within a transaction
+            DB::transaction(function () use ($workOrder) {
+                // Delete the work order (cascades to order_product due to onDelete('cascade'))
+                $workOrder->delete();
+
+                // Log the deletion
+                // Log::create([
+                //     'user_id' => auth()->id(),
+                //     'action' => 'delete_work_order',
+                //     'details' => json_encode([
+                //         'workorder_id' => $workOrder->id,
+                //         'workorder_number' => $workOrder->workorder_number,
+                //     ]),
+                // ]);
+            });
+
+            return response()->json([
+                'message' => 'Work order deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete work order',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+        
     }
 
     public function downloadPdf($id)
@@ -228,5 +305,12 @@ class WorkOrderController extends Controller
             'error' => $e->getMessage(),
         ], 500);
     }
+}
+
+private function generateInvoiceNumber()
+{
+    $latestInvoice = Invoice::latest()->first();
+    $number = $latestInvoice ? (int) str_replace('INV-', '', $latestInvoice->invoice_number) + 1 : 1;
+    return 'INV-' . str_pad($number, 3, '0', STR_PAD_LEFT);
 }
 }

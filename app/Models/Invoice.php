@@ -8,20 +8,52 @@ use Illuminate\Database\Eloquent\Model;
 class Invoice extends Model
 {
     use HasFactory;
+    
 
     protected $fillable = [
+            'workorder_id',
             'customer_id',
+            'vehicle_id',
             'amount' ,
             'status' ,
             'billed_date',
-            'paid_date'
+            'paid_date',
+            'invoice_number',
+            'discount',
+
     ];
 
-    public function Orders() {
-        return $this->hasMany(Order::class);
-    }
+    
 
+   
     public function customer() {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function vehicle() {
+        return $this->belongsTo(Vehicle::class);
+    }
+
+    public function workorder() {
+        return $this->belongsTo(workorder::class);
+    }
+
+
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'invoice_product')
+                    ->withPivot('quantity', 'unit_price')
+                    ->withTimestamps();
+    }
+
+    public function updateTotalPrice()
+    {
+        $total = $this->products()
+                    ->selectRaw('SUM(invoice_product.quantity * invoice_product.unit_price) as total')
+                    ->value('total') ?? 0;
+
+        if ($this->total !== $total) {
+            $this->updateQuietly(['total' => $total]);
+        }
     }
 }

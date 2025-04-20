@@ -34,6 +34,10 @@ class WorkOrder extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function invoice() {
+        return $this->belongsTo(Invoice::class);
+    }
+
     public function products()
     {
         return $this->belongsToMany(Product::class, 'workOrder_product')
