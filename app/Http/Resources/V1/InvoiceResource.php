@@ -14,17 +14,28 @@ class InvoiceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-
-        $customerName = isset($this->customer->name) ? $this->customer->name : 'supprime';
         return [
             'id' => $this->id,
-            'customerName' => $customerName,
+            'workorderId' => $this->workorder_id,
+            'invoiceNumber' => $this->invoice_number,
             'amount' => $this->amount,
             'status' => $this->status,
             'billedDate' => $this->billed_date,
             'paidDate' => $this->paid_date,
-            'orders' => OrderResource::collection($this->whenLoaded('orders'))
-
+            'customer' => new CustomerResource($this->customer),
+            'vehicle' => new VehicleResource($this->vehicle),
+            'discount' => $this->discount,
+            'products' => $this->whenLoaded('products', function () {
+                return $this->products->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name, // Remplacez par le champ réel de votre modèle Product
+                        'quantity' => $product->pivot->quantity,
+                        'unitPrice' => $product->pivot->unit_price,
+                        'total' => $product->pivot->quantity * $product->pivot->unit_price,
+                    ];
+                });
+            }),
         ];
     }
 }

@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\WorkOrderController;
+use App\Http\Controllers\Api\V1\InvoiceController;
+
 
 
 /*
@@ -44,5 +46,6 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1', 'm
     Route::apiResource('transactions', TransactionController::class);
     Route::apiResource('settings', SettingController::class);
     Route::post('/workorders/{id}/pdf', [WorkOrderController::class, 'downloadPdf'])->name('downloadPdf');
+    Route::post('/invoices/{id}/pdf', [InvoiceController::class, 'downloadPdf'])->name('downloadPdf');
   
 });
