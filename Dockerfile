@@ -19,10 +19,13 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 WORKDIR /var/www
 
 # Copier composer.json et composer.lock en premier pour optimiser le cache
-COPY composer.json composer.lock ./
+COPY . ./
 
 # Installer les dépendances Composer
 RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
+
+# Création du lien symbolique
+RUN php artisan storage:link
 
 # Copier le reste des fichiers
 COPY . .
