@@ -18,43 +18,56 @@ use App\services\WorkOrderService;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class WorkOrderController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of work orders, filtered by type and other query parameters.
+     * Results are cached in Redis for 10 minutes, with separate cache keys for quotes and orders.
+     *
+     * @param Request $request
+     * @return WorkOrderCollection
      */
-
-    //  protected $workOrderService;
-
-    // public function __construct(WorkOrderService $workOrderService)
-    // {
-    //     $this->workOrderService = $workOrderService;
-    // }
-
     public function index(Request $request)
     {
-        $workOrderQuery = WorkOrder::query();
+        // Initialize the WorkOrderFilter to transform query parameters
+        $filter = new WorkOrderFilter();
 
-        // Check if 'type' exists and is not empty
+        // Get the pageSize and type query parameters
         $pageSize = $request->query('pageSize');
-        $pageSize = $pageSize ?? 15; // Default to 15 if not provided
-        if ($request->filled('type')) {
-            $workOrderQuery->where('type', $request->input('type'));
+        $type = $request->input('type'); // e.g., 'quote' or 'order'
+
+        // Set cache key prefix based on type (quotes or orders)
+        $cacheKeyPrefix = $type === 'quote' ? 'quotes:' : 'orders:';
+
+        // Generate a unique cache key based on query parameters
+        $cacheKey = $cacheKeyPrefix . md5(json_encode([
+            'page' => $request->query('page', 1),
+            'pageSize' => $pageSize,
+        ]));
+
+        // Cache TTL: 10 minutes
+        $cacheTTL = now()->addMinutes(10);
+
+        // Build the query
+        $workOrderQuery = WorkOrder::query();
+        if ($type) {
+            $workOrderQuery->where('type', $type);
         }
-        $paginatedWorkOrder= $workOrderQuery->paginate($pageSize)->appends($request->query());
+     
 
-        // Paginate and append query parameters to pagination links
-        return new WorkOrderCollection($paginatedWorkOrder);
+        // Default to 15 items per page if pageSize is not provided
+        $pageSize = $pageSize ?? 15;
+
+        // Cache and retrieve paginated work orders
+        $paginatedWorkOrders = Cache::store('redis')->remember($cacheKey, $cacheTTL, function () use ($workOrderQuery, $pageSize, $request, $cacheKey) {
+            Log::info("Caching paginated work orders with key: {$cacheKey}");
+            return $workOrderQuery->paginate($pageSize)->appends($request->query());
+        });
+
+        return new WorkOrderCollection($paginatedWorkOrders);
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    // public function create()
-    // {
-    //     //
-    // }
 
     /**
      * Store a newly created resource in storage.
@@ -62,13 +75,12 @@ class WorkOrderController extends Controller
     public function store(StoreWorkOrderRequest $workOrderRequest, StoreWorkOrderProductRequest $productRequest)
     {     
         try {
-            
             // Start a database transaction
             $workOrder = DB::transaction(function () use ($workOrderRequest, $productRequest) {
                 // Get validated data
                 $workOrderData = $workOrderRequest->validated();
                 $productData = $productRequest->validated();
-                if( $workOrderData['type'] == 'order') {
+                if ($workOrderData['type'] == 'order') {
                     $workOrderData['order_date'] = now()->toDateTimeString();
                 }
                 // Create the workOrder
@@ -92,7 +104,10 @@ class WorkOrderController extends Controller
                 return $workOrder;
             });
 
-       
+            // Clear cache for the work order type (quotes or orders)
+            $cacheKeyPrefix = $workOrder->type === 'quote' ? 'quotes:*' : 'orders:*';
+            Cache::store('redis')->flush(); // Simplest approach: flush Redis database 1
+            Log::info("Cleared cache for {$cacheKeyPrefix} after creating work order ID: {$workOrder->id}");
 
             return response()->json([
                 'message' => 'WorkOrder created successfully',
@@ -100,7 +115,7 @@ class WorkOrderController extends Controller
         } catch (\Exception $e) {
             // Roll back the transaction on error
             return response()->json([
-                'message' => 'Failed to create workOrder',
+                'message' => 'Failed to create WorkOrder',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -109,52 +124,35 @@ class WorkOrderController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(WorkOrder $workOrder,Request $request)
+    public function show(WorkOrder $workOrder, Request $request)
     {
         return new WorkOrderResource($workOrder->loadMissing('products'));
     }
 
-    
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    // public function edit(WorkOrders $workOrders)
-    // {
-    //     //
-    // }
-
     /**
      * Update the specified resource in storage.
      */
-    // public function update(UpdateWorkOrdersRequest $request, WorkOrder $workOrder)
-    // {
-    //     $workOrder->update($request->all());
-    // }
-
-    public function update(UpdateWorkOrderRequest $workOrderRequest, UpdateWorkOrderProductRequest $productRequest,WorkOrder $workOrder )
+    public function update(UpdateWorkOrderRequest $workOrderRequest, UpdateWorkOrderProductRequest $productRequest, WorkOrder $workOrder)
     {     
         try {
             // Start a database transaction
             $workOrder = DB::transaction(function () use ($workOrderRequest, $productRequest, $workOrder) {
-
                 // Get validated data
                 $workOrderData = $workOrderRequest->validated();
                 $productData = $productRequest->validated();
-               // Check if status is 'converted' using array syntax
+                // Check if status is 'converted' using array syntax
                 if ($workOrderData['status'] === 'converted') {
                     $workOrderData['status'] = 'pending';
                     $workOrderData['type'] = 'order';
                     $workOrderData['quote_number'] = $workOrder['workorder_number'];
                     $workOrderData['order_date'] = now();
                 }
-                 // Handle status change to 'invoicing'
-                 if (isset($workOrderData['status']) && $workOrderData['status'] === 'to_invoice') {
+                // Handle status change to 'invoicing'
+                if (isset($workOrderData['status']) && $workOrderData['status'] === 'to_invoice') {
                     // Ensure work order is in a valid state for invoicing
                     if ($workOrder->status !== 'completed') {
                         throw new \Exception('Work order must be completed to create an invoice');
                     }
-                    
 
                     // Create invoice
                     $invoice = Invoice::create([
@@ -185,12 +183,12 @@ class WorkOrderController extends Controller
                     $workOrderData['status'] = 'to_invoice';
                 }
 
-                // Mettre à jour les données principales du WorkOrder
+                // Update the WorkOrder data
                 $workOrder->update($workOrderData);
 
-                // Si des produits sont fournis, mettre à jour la relation
-                if (isset($productData['productsWorkOrder']) && $productData['productsWorkOrder'] != [] ) {
-                    // Préparer les données des produits pour la table pivot
+                // If products are provided, update the relationship
+                if (isset($productData['productsWorkOrder']) && !empty($productData['productsWorkOrder'])) {
+                    // Prepare product data for the pivot table
                     $productWorkOrders = collect($productData['productsWorkOrder'])->mapWithKeys(function ($item) {
                         return [
                             $item['product_id'] => [
@@ -200,24 +198,29 @@ class WorkOrderController extends Controller
                         ];
                     })->all();
 
-                    // Synchroniser les produits avec le WorkOrder
+                    // Sync products with the WorkOrder
                     $workOrder->products()->sync($productWorkOrders);
                 }
 
-                // Mettre à jour le prix total
+                // Update the total price
                 $workOrder->updateTotalPrice();
 
                 return $workOrder;
-                });
+            });
+
+            // Clear cache for the work order type (quotes or orders)
+            $cacheKeyPrefix = $workOrder->type === 'quote' ? 'quotes:*' : 'orders:*';
+            Cache::store('redis')->flush(); // Simplest approach: flush Redis database 1
+            Log::info("Cleared cache for {$cacheKeyPrefix} after creating work order ID: {$workOrder->id}");
 
             return response()->json([
                 'message' => 'WorkOrder updated successfully',
-                'data' => $workOrder->load('products'), // Optionnel : inclure les produits mis à jour
+                'data' => $workOrder->load('products'),
             ], 200);
         } catch (\Exception $e) {
             // Roll back the transaction on error
             return response()->json([
-                'message' => 'Failed to update workOrder',
+                'message' => 'Failed to update WorkOrder',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -247,16 +250,6 @@ class WorkOrderController extends Controller
             DB::transaction(function () use ($workOrder) {
                 // Delete the work order (cascades to order_product due to onDelete('cascade'))
                 $workOrder->delete();
-
-                // Log the deletion
-                // Log::create([
-                //     'user_id' => auth()->id(),
-                //     'action' => 'delete_work_order',
-                //     'details' => json_encode([
-                //         'workorder_id' => $workOrder->id,
-                //         'workorder_number' => $workOrder->workorder_number,
-                //     ]),
-                // ]);
             });
 
             return response()->json([
@@ -268,49 +261,49 @@ class WorkOrderController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-        
     }
 
+    /**
+     * Generate and stream a PDF for the specified work order.
+     */
     public function downloadPdf($id)
-{
-    try {
-        
-        $workOrder = Workorder::with(['products', 'vehicle.brand', 'customer'])->findOrFail($id);
+    {
+        try {
+            $workOrder = WorkOrder::with(['products', 'vehicle.brand', 'customer'])->findOrFail($id);
 
-         // Récupérer les informations de la société
-         $company = Setting::first(); // Supposons que les infos de la société sont stockées dans une table "settings"
+            // Retrieve company information
+            $company = Setting::first();
 
-      
+            // Prepare data for the PDF view
+            $data = [
+                'workOrder' => $workOrder,
+                'company' => $company,
+                'totalTTC' => $workOrder->total * 1.20, // Apply 20% VAT
+            ];
 
-        // Préparer les données pour la vue
-        $data = [
-            'workOrder' => $workOrder, // Utiliser le modèle brut, pas une ressource
-            'company' => $company,
-            'totalTTC' => $workOrder->total * 1.20, // TVA 20%
-        ];
+            // Generate PDF from the view
+            $pdf = Pdf::loadView('pdf.quote', $data);
 
-        // Générer le PDF à partir de la vue
-        $pdf = Pdf::loadView('pdf.quote', $data);
-       
+            // Stream the PDF
+            return $pdf->stream('devis-' . $workOrder->workorderNumber . '.pdf');
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Error generating PDF: ' . $e->getMessage());
 
-        // Télécharger le PDF
-         return $pdf->stream('devis-' . $workOrder->workorderNumber . '.pdf');
-    } catch (\Exception $e) {
-        // Log l’erreur pour le débogage
-        \Log::error('Erreur lors de la génération du PDF : ' . $e->getMessage());
-
-        // Retourner une réponse d’erreur (facultatif, selon ton besoin)
-        return response()->json([
-            'message' => 'Échec de la génération du PDF',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'message' => 'Failed to generate PDF',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
-private function generateInvoiceNumber()
-{
-    $latestInvoice = Invoice::latest()->first();
-    $number = $latestInvoice ? (int) str_replace('INV-', '', $latestInvoice->invoice_number) + 1 : 1;
-    return 'INV-' . str_pad($number, 3, '0', STR_PAD_LEFT);
-}
+    /**
+     * Generate a unique invoice number.
+     */
+    private function generateInvoiceNumber()
+    {
+        $latestInvoice = Invoice::latest()->first();
+        $number = $latestInvoice ? (int) str_replace('INV-', '', $latestInvoice->invoice_number) + 1 : 1;
+        return 'INV-' . str_pad($number, 3, '0', STR_PAD_LEFT);
+    }
 }
