@@ -14,85 +14,105 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Requests\V1\UpdateWorkOrderProductRequest;
-
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class InvoiceController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a listing of invoices, filtered by query parameters.
+     * Results are cached in Redis for 10 minutes.
+     *
+     * @param Request $request
+     * @return InvoiceCollection
      */
     public function index(Request $request)
     {
-        $invoiceQuery = Invoice::query();
+        // Initialize the InvoiceFilter to transform query parameters
+        $filter = new InvoiceFilter();
+        $queryItems = $filter->transform($request);
 
-        // Check if 'type' exists and is not empty
+        // Get the pageSize query parameter
         $pageSize = $request->query('pageSize');
-        $pageSize = $pageSize ?? 15; // Default to 15 if not provided
-        $paginatedInvoices= $invoiceQuery->paginate($pageSize)->appends($request->query());
 
-        // Paginate and append query parameters to pagination links
+        // Generate a unique cache key based on query parameters
+        $cacheKey = 'invoices:' . md5(json_encode([
+            'filters' => $queryItems,
+            'page' => $request->query('page', 1),
+            'pageSize' => $pageSize,
+        ]));
+
+        // Cache TTL: 10 minutes
+        $cacheTTL = now()->addMinutes(10);
+
+        // Build the query
+        $invoiceQuery = Invoice::query();
+        foreach ($queryItems as $key => $value) {
+            $invoiceQuery->where($key, $value);
+        }
+
+        // Default to 15 items per page if pageSize is not provided
+        $pageSize = $pageSize ?? 15;
+
+        // Cache and retrieve paginated invoices
+        $paginatedInvoices = Cache::remember($cacheKey, $cacheTTL, function () use ($invoiceQuery, $pageSize, $request, $cacheKey) {
+            Log::info("Caching paginated invoices with key: {$cacheKey}");
+            return $invoiceQuery->paginate($pageSize)->appends($request->query());
+        });
+
         return new InvoiceCollection($paginatedInvoices);
-
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    // public function create()
-    // {
-    //     //
-    // }
-
-    /**
-     * Store a newly created resource in storage.
+     * Store a newly created invoice in storage and clear relevant cache.
      */
     public function store(StoreInvoiceRequest $request)
     {
-        return new InvoiceResource(Invoice::create($request->all()));
+        try {
+            // Start a database transaction
+            $invoice = DB::transaction(function () use ($request) {
+                // Create the invoice
+                $invoice = Invoice::create($request->validated());
+                return $invoice;
+            });
+
+            // Clear cache for invoices
+            Cache::store('redis')->flush(); // Flush Redis database 1
+            Log::info("Cleared cache for invoices:* after creating invoice ID: {$invoice->id}");
+
+            return new InvoiceResource($invoice);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create invoice',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified invoice.
      */
     public function show(Invoice $invoice, Request $request)
     {
-        
         return new InvoiceResource($invoice->loadMissing('products'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Update the specified invoice in storage and clear relevant cache.
      */
-    // public function edit(Invoice $invoice)
-    // {
-    //     //
-    // }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateInvoiceRequest $invoiceRequest,UpdateWorkOrderProductRequest $productRequest,Invoice $invoice)
+    public function update(UpdateInvoiceRequest $invoiceRequest, UpdateWorkOrderProductRequest $productRequest, Invoice $invoice)
     {
-        // $invoice->update($request->all());
         try {
             // Start a database transaction
             $invoice = DB::transaction(function () use ($invoiceRequest, $productRequest, $invoice) {
-
                 // Get validated data
                 $invoiceData = $invoiceRequest->validated();
                 $productData = $productRequest->validated();
-                \Log::info('[' . basename(__FILE__) . ':' . __LINE__ . '] Copied Object :', [
-                    'data' => $invoiceData
-                ]);
-                \Log::info('[' . basename(__FILE__) . ':' . __LINE__ . '] Copied Object :', [
-                    'data' => $productData
-                ]);
+              
 
-          
-            
-                 // Handle status change to 'invoicing'
-                 if (isset($invoiceData['status']) && $invoiceData['status'] === 'draft') {
-                    // Copy products from order_product to invoice_product
+                // Handle status change to 'draft'
+                if (isset($invoiceData['status']) && $invoiceData['status'] === 'draft') {
+                    // Sync existing products
                     $invoiceProducts = $invoice->products->mapWithKeys(function ($product) {
                         return [
                             $product->id => [
@@ -104,12 +124,12 @@ class InvoiceController extends Controller
                     $invoice->products()->sync($invoiceProducts);
                 }
 
-                // Mettre à jour les données principales du WorkOrder
+                // Update the invoice data
                 $invoice->update($invoiceData);
 
-                // Si des produits sont fournis, mettre à jour la relation
-                if (isset($productData['productsWorkOrder']) && $productData['productsWorkOrder'] != [] ) {
-                    // Préparer les données des produits pour la table pivot
+                // If products are provided, update the relationship
+                if (isset($productData['productsWorkOrder']) && !empty($productData['productsWorkOrder'])) {
+                    // Prepare product data for the pivot table
                     $productWorkOrders = collect($productData['productsWorkOrder'])->mapWithKeys(function ($item) {
                         return [
                             $item['product_id'] => [
@@ -119,22 +139,25 @@ class InvoiceController extends Controller
                         ];
                     })->all();
 
-                    // Synchroniser les produits avec le WorkOrder
+                    // Sync products with the invoice
                     $invoice->products()->sync($productWorkOrders);
                 }
 
-                // Mettre à jour le prix total
+                // Update the total price
                 $invoice->updateTotalPrice();
 
                 return $invoice;
-                });
+            });
+
+            // Clear cache for invoices
+            Cache::store('redis')->flush(); // Flush Redis database 1
+            Log::info("Cleared cache for invoices:* after updating invoice ID: {$invoice->id}");
 
             return response()->json([
-                'message' => 'WorkOrder updated successfully',
-                'data' => $invoice->load('products'), // Optionnel : inclure les produits mis à jour
+                'message' => 'Invoice updated successfully',
+                'data' => $invoice->load('products'),
             ], 200);
         } catch (\Exception $e) {
-            // Roll back the transaction on error
             return response()->json([
                 'message' => 'Failed to update invoice',
                 'error' => $e->getMessage(),
@@ -143,48 +166,62 @@ class InvoiceController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified invoice from storage and clear relevant cache.
      */
     public function destroy(Invoice $invoice)
     {
-        $invoice->delete();
-    }
-
-    public function downloadPdf($id)
-    {
         try {
-            
-            $invoice = Invoice::with(['products', 'vehicle.brand', 'customer'])->findOrFail($id);
-    
-             // Récupérer les informations de la société
-             $company = Setting::first(); // Supposons que les infos de la société sont stockées dans une table "settings"
-    
-          
-    
-            // Préparer les données pour la vue
-            $data = [
-                'invoice' => $invoice, // Utiliser le modèle brut, pas une ressource
-                'company' => $company,
-                'totalTTC' => $invoice->amount * 1.20, // TVA 20%
-            ];
-    
-            // Générer le PDF à partir de la vue
-            $pdf = Pdf::loadView('pdf.invoice', $data);
-           
-    
-            // Télécharger le PDF
-             return $pdf->stream('devis-' . $invoice->workorderNumber . '.pdf');
-        } catch (\Exception $e) {
-            // Log l’erreur pour le débogage
-            \Log::error('Erreur lors de la génération du PDF : ' . $e->getMessage());
-    
-            // Retourner une réponse d’erreur (facultatif, selon ton besoin)
+            // Delete within a transaction
+            DB::transaction(function () use ($invoice) {
+                $invoice->delete();
+            });
+
+            // Clear cache for invoices
+            Cache::store('redis')->flush(); // Flush Redis database 1
+            Log::info("Cleared cache for invoices:* after deleting invoice ID: {$invoice->id}");
+
             return response()->json([
-                'message' => 'Échec de la génération du PDF',
+                'message' => 'Invoice deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete invoice',
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
-    
 
+    /**
+     * Generate and stream a PDF for the specified invoice.
+     */
+    public function downloadPdf($id)
+    {
+        try {
+            $invoice = Invoice::with(['products', 'vehicle.brand', 'customer'])->findOrFail($id);
+
+            // Retrieve company information
+            $company = Setting::first();
+
+            // Prepare data for the PDF view
+            $data = [
+                'invoice' => $invoice,
+                'company' => $company,
+                'totalTTC' => $invoice->amount * 1.20, // Apply 20% VAT
+            ];
+
+            // Generate PDF from the view
+            $pdf = Pdf::loadView('pdf.invoice', $data);
+
+            // Stream the PDF
+            return $pdf->stream('invoice-' . $invoice->invoice_number . '.pdf');
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            Log::error('Error generating PDF: ' . $e->getMessage());
+
+            return response()->json([
+                'message' => 'Failed to generate PDF',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

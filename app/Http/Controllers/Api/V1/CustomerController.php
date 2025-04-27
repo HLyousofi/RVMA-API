@@ -10,7 +10,7 @@ use App\Http\Resources\V1\CustomerCollection;
 use App\Http\Controllers\Controller;
 use App\Filters\V1\CustomerFilter;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Cache;
 
 class CustomerController extends Controller
 {
@@ -19,37 +19,48 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
-        
         $filter = new CustomerFilter();
         $queryItems = $filter->transform($request);
         $pageSize = $request->query('pageSize');
-        $customersQuery = Customer::where($queryItems);
+
+        // Generate a unique cache key based on query parameters
+        $cacheKey = 'customers:' . md5(json_encode([
+            'filters' => $queryItems,
+            'page' => $request->query('page', 1),
+            'pageSize' => $pageSize,
+        ]));
+
+        // Cache TTL: 10 minutes
+        $cacheTTL = now()->addMinutes(10);
 
         if ($pageSize === 'all') {
-            return CustomerResource::collection($customersQuery->get());
+            // Cache the full customer list
+            $customers = Cache::remember($cacheKey, $cacheTTL, function () use ($queryItems) {
+                return Customer::where($queryItems)->get();
+            });
+            return CustomerResource::collection($customers);
         }
 
         // Handle paginated case
         $pageSize = $pageSize ?? 10; // Default to 10 if not provided
-        $paginatedCustomers = $customersQuery->paginate($pageSize)->appends($request->query());
+        $paginatedCustomers = Cache::remember($cacheKey, $cacheTTL, function () use ($queryItems, $pageSize, $request) {
+            return Customer::where($queryItems)->paginate($pageSize)->appends($request->query());
+        });
 
         return new CustomerCollection($paginatedCustomers);
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    // public function create()
-    // {
-    //     //
-    // }
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(StoreCustomerRequest $request)
     {
-        return new CustomerResource(Customer::create($request->all()));
+        $customer = Customer::create($request->all());
+
+        // Invalidate cache for customer lists
+        $this->invalidateCustomerListCache();
+
+        return new CustomerResource($customer);
     }
 
     /**
@@ -59,25 +70,29 @@ class CustomerController extends Controller
     {
         $includeInvoices = $request->query('includeInvoices');
         $includeVehicles = $request->query('includeVehicles');
-        if($includeInvoices && $includeVehicles){
-            $customer = $customer->loadMissing('invoices', 'vehicles');
-        }
-        if($includeInvoices) {
-            $customer = $customer->loadMissing('invoices');
-        }
-        if($includeVehicles) {
-            $customer = $customer->loadMissing('vehicles');
-        }
-        return new customerResource($customer);
-    }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    // public function edit(Customer $customer)
-    // {
-    //     //
-    // }
+        // Generate a unique cache key for the customer
+        $cacheKey = 'customer:' . $customer->id . ':' . ($includeInvoices ? 'invoices' : '') . ':' . ($includeVehicles ? 'vehicles' : '');
+
+        // Cache TTL: 10 minutes
+        $cacheTTL = now()->addMinutes(10);
+
+        // Cache the customer with optional relationships
+        $cachedCustomer = Cache::remember($cacheKey, $cacheTTL, function () use ($customer, $includeInvoices, $includeVehicles) {
+            if ($includeInvoices && $includeVehicles) {
+                return $customer->loadMissing('invoices', 'vehicles');
+            }
+            if ($includeInvoices) {
+                return $customer->loadMissing('invoices');
+            }
+            if ($includeVehicles) {
+                return $customer->loadMissing('vehicles');
+            }
+            return $customer;
+        });
+
+        return new CustomerResource($cachedCustomer);
+    }
 
     /**
      * Update the specified resource in storage.
@@ -85,6 +100,12 @@ class CustomerController extends Controller
     public function update(UpdateCustomerRequest $request, Customer $customer)
     {
         $customer->update($request->all());
+
+        // Invalidate cache for this customer and customer lists
+        $this->invalidateCustomerCache($customer->id);
+        $this->invalidateCustomerListCache();
+
+        return new CustomerResource($customer);
     }
 
     /**
@@ -92,6 +113,35 @@ class CustomerController extends Controller
      */
     public function destroy(Customer $customer)
     {
+        $customerId = $customer->id;
         $customer->delete();
+
+        // Invalidate cache for this customer and customer lists
+        $this->invalidateCustomerCache($customerId);
+        $this->invalidateCustomerListCache();
+
+        return response()->json(null, 204);
+    }
+
+    /**
+     * Invalidate cache for a specific customer.
+     */
+    private function invalidateCustomerCache($customerId)
+    {
+        // Invalidate all cache keys for this customer (with/without relationships)
+        Cache::forget('customer:' . $customerId . '::');
+        Cache::forget('customer:' . $customerId . ':invoices:');
+        Cache::forget('customer:' . $customerId . ':vehicles:');
+        Cache::forget('customer:' . $customerId . ':invoices:vehicles');
+    }
+
+    /**
+     * Invalidate cache for customer lists.
+     */
+    private function invalidateCustomerListCache()
+    {
+        // Invalidate all customer list caches (simplified approach)
+        // Alternatively, use a more specific approach if you have known cache keys
+        Cache::tags(['customers'])->flush();
     }
 }

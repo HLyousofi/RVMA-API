@@ -10,6 +10,8 @@ use App\Filters\V1\VehicleFilter;
 use App\Http\Resources\V1\VehicleCollection;
 use App\Http\Resources\V1\VehicleResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+
 
 class VehicleController extends Controller
 {
@@ -23,18 +25,31 @@ class VehicleController extends Controller
         $pageSize = $request->query('pageSize');
         // $vehicles = Vehicle::where($queryItems);
         $vehcilesQuery = Vehicle::query();
+
+         // Generate a unique cache key based on query parameters
+         $cacheKey = 'vehicles:' . md5(json_encode([
+            'filters' => $queryItems,
+            'page' => $request->query('page', 1),
+            'pageSize' => $pageSize,
+        ]));
+
+        // Cache TTL: 10 minutes
+        $cacheTTL = now()->addMinutes(10);
+
         if ($pageSize === 'all') {
-            return VehicleResource::collection($vehcilesQuery->get());
+            $vehicles = Cache::remember($cacheKey, $cacheTTL, function () use ($queryItems) {
+                return Vehicle::where($queryItems)->get();
+            });
+            return VehicleResource::collection($vehicles);
         }
 
         // Handle paginated case
         $pageSize = $pageSize ?? 15; // Default to 15 if not provided
-        $paginatedvehciles = $vehcilesQuery->paginate($pageSize)->appends($request->query());
+        $paginatedvehciles = Cache::remember($cacheKey, $cacheTTL, function () use ($vehcilesQuery, $pageSize, $request) {
+           return $vehcilesQuery->paginate($pageSize)->appends($request->query()); 
+        }); 
 
         return new VehicleCollection($paginatedvehciles);
-        
-       // $vehicles = Vehicle::where($queryItems);
-        // return new VehicleCollection($vehicles->paginate($pageSize)->appends($request->query()));
         
     }
 
@@ -81,6 +96,10 @@ class VehicleController extends Controller
      */
     public function update(UpdateVehicleRequest $request, Vehicle $vehicle)
     {
+         // Invalidate cache for this customer and customer lists
+         $this->invalidateVehicleCache($vehicle->id);
+         $this->invalidateVehicleListCache();
+ 
         $validatedData = $request->validated();
         $vehicle->update($validatedData);
     }
@@ -91,5 +110,31 @@ class VehicleController extends Controller
     public function destroy(Vehicle $vehicle)
     {
          $vehicle->delete();
+
+         // Invalidate cache for this vehicle and customer lists
+        $this->invalidateVehicleCache($VehicleId);
+        $this->invalidateVehicleListCache();
+    }
+
+    /**
+     * Invalidate cache for a specific customer.
+     */
+    private function invalidateVehicleCache($vehcileId)
+    {
+        // Invalidate all cache keys for this customer (with/without relationships)
+        Cache::forget('vehicle:' . $vehcileId . '::');
+        Cache::forget('vehicle:' . $vehcileId . ':invoices:');
+        Cache::forget('vehicle:' . $vehcileId . ':vehicles:');
+        Cache::forget('vehicle:' . $vehcileId . ':invoices:vehicles');
+    }
+
+    /**
+     * Invalidate cache for customer lists.
+     */
+    private function invalidateVehicleListCache()
+    {
+        // Invalidate all customer list caches (simplified approach)
+        // Alternatively, use a more specific approach if you have known cache keys
+        Cache::tags(['vehicles'])->flush();
     }
 }
