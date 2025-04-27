@@ -37,6 +37,11 @@ return [
             'driver' => 'apc',
         ],
 
+        'redis' => [
+            'driver' => 'redis',
+            'connection' => 'default',
+         ],
+
         'array' => [
             'driver' => 'array',
             'serialize' => false,

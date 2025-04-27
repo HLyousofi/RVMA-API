@@ -40,7 +40,7 @@ class WorkOrder extends Model
 
     public function products()
     {
-        return $this->belongsToMany(Product::class, 'workOrder_product')
+        return $this->belongsToMany(Product::class, 'workorder_product')
                     ->withPivot('quantity', 'unit_price')
                     ->withTimestamps();
     }
@@ -48,7 +48,7 @@ class WorkOrder extends Model
     public function updateTotalPrice()
     {
         $total = $this->products()
-                    ->selectRaw('SUM(workOrder_product.quantity * workOrder_product.unit_price) as total')
+                    ->selectRaw('SUM(workorder_product.quantity * workorder_product.unit_price) as total')
                     ->value('total') ?? 0;
 
         if ($this->total !== $total) {

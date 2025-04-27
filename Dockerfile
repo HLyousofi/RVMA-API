@@ -1,7 +1,7 @@
 # Utiliser une image PHP avec PHP-FPM
 FROM php:8.2-fpm
 
-# Installer les dépendances système
+# Installer les dépendances système et l'extension Redis
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -10,7 +10,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_mysql
+    && docker-php-ext-install gd pdo pdo_mysql \
+    && pecl install redis \
+    && docker-php-ext-enable redis
 
 # Installer Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -21,7 +23,7 @@ WORKDIR /var/www
 # Copier les fichiers de dépendances pour optimiser le cache
 COPY composer.json composer.lock ./
 
-# Installer les dépendKILLances Composer
+# Installer les dépendances Composer
 RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
 
 # Copier le reste de l'application

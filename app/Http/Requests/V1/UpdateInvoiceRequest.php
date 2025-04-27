@@ -28,7 +28,7 @@ class UpdateInvoiceRequest extends FormRequest
             'billed_date' => 'sometimes|date_format:Y-m-d H:i:s', // Optionnel mais format strict si fourni
             'amount' => 'sometimes|numeric|min:0',
             'paid_date' => 'sometimes|date_format:Y-m-d H:i:s',
-            'status' => 'sometimes|in:rejected,draft,converted,in_progress,completed,to_invoice',
+            'status' => 'sometimes|in:rejected,draft,issued,paid',
 
         ];
     }
