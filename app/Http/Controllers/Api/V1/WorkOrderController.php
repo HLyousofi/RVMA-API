@@ -48,7 +48,7 @@ class WorkOrderController extends Controller
         ]));
 
         // Cache TTL: 10 minutes
-        $cacheTTL = now()->addMinutes(10);
+        $cacheTTL = now()->addMinutes(60);
 
         // Build the query
         $workOrderQuery = WorkOrder::query();

@@ -33,8 +33,8 @@ class VehicleController extends Controller
             'pageSize' => $pageSize,
         ]));
 
-        // Cache TTL: 10 minutes
-        $cacheTTL = now()->addMinutes(10);
+        // Cache TTL: 60 minutes
+        $cacheTTL = now()->addMinutes(60);
 
         if ($pageSize === 'all') {
             $vehicles = Cache::remember($cacheKey, $cacheTTL, function () use ($queryItems) {

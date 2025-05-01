@@ -43,13 +43,11 @@ class InvoiceController extends Controller
         ]));
 
         // Cache TTL: 10 minutes
-        $cacheTTL = now()->addMinutes(10);
+        $cacheTTL = now()->addMinutes(60);
 
         // Build the query
         $invoiceQuery = Invoice::query();
-        foreach ($queryItems as $key => $value) {
-            $invoiceQuery->where($key, $value);
-        }
+       
 
         // Default to 15 items per page if pageSize is not provided
         $pageSize = $pageSize ?? 15;
@@ -150,8 +148,8 @@ class InvoiceController extends Controller
             });
 
             // Clear cache for invoices
-            Cache::store('redis')->flush(); // Flush Redis database 1
-            Log::info("Cleared cache for invoices:* after updating invoice ID: {$invoice->id}");
+            $this->clearInvoiceCache();
+          
 
             return response()->json([
                 'message' => 'Invoice updated successfully',
@@ -175,10 +173,7 @@ class InvoiceController extends Controller
             DB::transaction(function () use ($invoice) {
                 $invoice->delete();
             });
-
-            // Clear cache for invoices
-            Cache::store('redis')->flush(); // Flush Redis database 1
-            Log::info("Cleared cache for invoices:* after deleting invoice ID: {$invoice->id}");
+            $this->clearInvoiceCache();
 
             return response()->json([
                 'message' => 'Invoice deleted successfully',
@@ -222,6 +217,16 @@ class InvoiceController extends Controller
                 'message' => 'Failed to generate PDF',
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    protected function clearInvoiceCache()
+    {
+        try {
+            Cache::tags(['invoices'])->flush();
+            Log::info('Invoice cache cleared due to create/update event.');
+        } catch (\Exception $e) {
+            Log::error('Failed to clear invoice cache: ' . $e->getMessage());
         }
     }
 }

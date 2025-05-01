@@ -183,7 +183,7 @@
 
         <!-- Total in Words -->
         <div class="total-in-words">
-            <p><strong>Montant en lettres :</strong> {{ (new \NumberToWords\NumberToWords())->getNumberTransformer('fr')->toWords($invoice->amount * 1.20) }} Dirhams</p>
+            <p><strong>Montant total en toutes lettres :</strong> {{ (new \NumberToWords\NumberToWords())->getNumberTransformer('fr')->toWords($invoice->amount * 1.20) }} Dirhams</p>
         </div>
 
         <!-- Footer -->
