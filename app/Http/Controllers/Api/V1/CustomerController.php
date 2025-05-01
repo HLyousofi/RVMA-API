@@ -31,7 +31,7 @@ class CustomerController extends Controller
         ]));
 
         // Cache TTL: 10 minutes
-        $cacheTTL = now()->addMinutes(10);
+        $cacheTTL = now()->addMinutes(60);
 
         if ($pageSize === 'all') {
             // Cache the full customer list

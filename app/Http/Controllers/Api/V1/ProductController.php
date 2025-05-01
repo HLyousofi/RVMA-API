@@ -9,6 +9,7 @@ use App\Http\Resources\V1\ProductResource;
 use App\Http\Resources\V1\ProductCollection;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 
 
@@ -22,13 +23,26 @@ class ProductController extends Controller
         $pageSize = $request->query('pageSize');
         $productsQuery = Product::query();
 
+         // Generate a unique cache key based on query parameters
+         $cacheKey = 'products:' . md5(json_encode([
+            'page' => $request->query('page', 1),
+            'pageSize' => $pageSize,
+        ]));
+
+        // Cache TTL: 60 minutes
+        $cacheTTL = now()->addMinutes(60);
         if ($pageSize === 'all') {
-            return ProductResource::collection($productsQuery->get());
+            $products = Cache::remember($cacheKey, $cacheTTL, function () {
+                return Product::all();
+            });
+            return ProductResource::collection($products);
         }
 
         // Handle paginated case
         $pageSize = $pageSize ?? 15; // Default to 10 if not provided
-        $paginatedproducts = $productsQuery->paginate($pageSize)->appends($request->query());
+        $paginatedproducts = Cache::remember($cacheKey, $cacheTTL, function () use ($productsQuery, $pageSize, $request ) {
+            return $productsQuery->paginate($pageSize)->appends($request->query());
+        }); 
 
         return new ProductCollection($paginatedproducts);
         // return new productCollection(Product::withSum('stocks', 'quantity')->get());
@@ -49,6 +63,7 @@ class ProductController extends Controller
     {
         // $product = Product::create($request->validated());
         // return response()->json(['message' => 'Product created successfully', 'product' => $product], 201);
+        $this->clearProductCache();
         return new ProductResource(Product::create($request->validated()));
     }
 
@@ -73,8 +88,8 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
-       
-        $product->update($request->validated());
+        $this->clearProductCache();
+        return $product->update($request->validated());
     }
 
     /**
@@ -82,6 +97,20 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $product->delete();
+        $this->clearProductCache();
+
+         return $product->delete();
     }
+
+    protected function clearProductCache()
+    {
+        try {
+            Cache::tags(['products'])->flush();
+            Log::info('Product cache cleared due to create/update event.');
+        } catch (\Exception $e) {
+            Log::error('Failed to clear invoice cache: ' . $e->getMessage());
+        }
+    }
+
+
 }
