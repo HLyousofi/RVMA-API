@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+
 
 
 class WorkOrder extends Model
@@ -65,6 +67,8 @@ class WorkOrder extends Model
 
         static::created(function ($workOrder) {
             $prefix = $workOrder->type === 'quote' ? 'DEVIS-' : 'ORDER-';
+            $cacheTag = $workOrder->type === 'quote' ? 'quotes' : 'orders';
+            Cache::tags([$cacheTag])->flush();
             $workOrder->updateQuietly([
                 'workorder_number' => $prefix . str_pad($workOrder->id, 3, '0', STR_PAD_LEFT)
             ]);
@@ -72,14 +76,27 @@ class WorkOrder extends Model
     
         static::updating(function ($workOrder) {
             if ($workOrder->isDirty('type') && $workOrder->type === 'order' && $workOrder->status == 'pending' ) {
+                Cache::tags(['quotes'])->flush();
+                Cache::tags(['orders'])->flush();
                 $prefix = 'ORDER-';
                 $workOrder->workorder_number = $prefix . str_pad($workOrder->id, 3, '0', STR_PAD_LEFT);
                 $workOrder->updateTotalPrice();
+            }else {
+                $cacheTag = $workOrder->type === 'quote' ? 'quotes' : 'orders';
+                Cache::tags([$cacheTag])->flush();
             }
         });
+
+        static::deleted(function ($workOrder) {
+            $cacheTag = $workOrder->type === 'quote' ? 'quotes' : 'orders';
+            Cache::tags([ $cacheTag])->flush();
+        });
+
     
         
     }
+
+   
     
 
     

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
+
 
 class Invoice extends Model
 {
@@ -55,5 +57,25 @@ class Invoice extends Model
         if ($this->total !== $total) {
             $this->updateQuietly(['total' => $total]);
         }
+    }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        // Création d'une facture
+        static::created(function () {
+            Cache::tags(['invoices'])->flush();
+        });
+
+        // Mise à jour d'une facture
+        static::updated(function () {
+            Cache::tags(['invoices'])->flush();
+        });
+
+        // Suppression d'une facture
+        static::deleted(function () {
+            Cache::tags(['invoices'])->flush();
+        });
     }
 }

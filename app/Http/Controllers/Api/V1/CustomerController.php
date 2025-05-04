@@ -35,7 +35,7 @@ class CustomerController extends Controller
 
         if ($pageSize === 'all') {
             // Cache the full customer list
-            $customers = Cache::remember($cacheKey, $cacheTTL, function () use ($queryItems) {
+            $customers = Cache::tags(['customers'])->remember($cacheKey, $cacheTTL, function () use ($queryItems) {
                 return Customer::where($queryItems)->get();
             });
             return CustomerResource::collection($customers);
@@ -43,7 +43,7 @@ class CustomerController extends Controller
 
         // Handle paginated case
         $pageSize = $pageSize ?? 10; // Default to 10 if not provided
-        $paginatedCustomers = Cache::remember($cacheKey, $cacheTTL, function () use ($queryItems, $pageSize, $request) {
+        $paginatedCustomers = Cache::tags(['customers'])->remember($cacheKey, $cacheTTL, function () use ($queryItems, $pageSize, $request) {
             return Customer::where($queryItems)->paginate($pageSize)->appends($request->query());
         });
 
@@ -59,6 +59,8 @@ class CustomerController extends Controller
 
         // Invalidate cache for customer lists
         $this->invalidateCustomerListCache();
+
+        
 
         return new CustomerResource($customer);
     }
@@ -100,11 +102,6 @@ class CustomerController extends Controller
     public function update(UpdateCustomerRequest $request, Customer $customer)
     {
         $customer->update($request->all());
-
-        // Invalidate cache for this customer and customer lists
-        $this->invalidateCustomerCache($customer->id);
-        $this->invalidateCustomerListCache();
-
         return new CustomerResource($customer);
     }
 
@@ -115,33 +112,11 @@ class CustomerController extends Controller
     {
         $customerId = $customer->id;
         $customer->delete();
-
-        // Invalidate cache for this customer and customer lists
-        $this->invalidateCustomerCache($customerId);
-        $this->invalidateCustomerListCache();
-
         return response()->json(null, 204);
     }
 
     /**
      * Invalidate cache for a specific customer.
      */
-    private function invalidateCustomerCache($customerId)
-    {
-        // Invalidate all cache keys for this customer (with/without relationships)
-        Cache::forget('customer:' . $customerId . '::');
-        Cache::forget('customer:' . $customerId . ':invoices:');
-        Cache::forget('customer:' . $customerId . ':vehicles:');
-        Cache::forget('customer:' . $customerId . ':invoices:vehicles');
-    }
-
-    /**
-     * Invalidate cache for customer lists.
-     */
-    private function invalidateCustomerListCache()
-    {
-        // Invalidate all customer list caches (simplified approach)
-        // Alternatively, use a more specific approach if you have known cache keys
-        Cache::tags(['customers'])->flush();
-    }
+   
 }

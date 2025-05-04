@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\FuelType;
 use App\Http\Resources\V1\FuelTypeResource;
 use App\Http\Resources\V1\FuelTypeCollection;
+use Illuminate\Support\Facades\Cache;
+
 
 
 class FuelTypeController extends Controller
@@ -15,7 +17,9 @@ class FuelTypeController extends Controller
      // Get a list of all fuel types
      public function index()
      {
-         $fuelTypes = FuelType::all();
+         $fuelTypes = Cache::tags(['fuelTypes'])->remember('fuel_types_index', 60 * 60, function () {
+            return FuelType::all();
+        });
          return new FuelTypeCollection($fuelTypes);
      }
  
