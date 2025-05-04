@@ -37,10 +37,10 @@ class InvoiceController extends Controller
 
         // Generate a unique cache key based on query parameters
         $cacheKey = 'invoices:' . md5(json_encode([
-            'filters' => $queryItems,
+            'filters' => ksort($queryItems),
             'page' => $request->query('page', 1),
             'pageSize' => $pageSize,
-        ]));
+        ], JSON_FORCE_OBJECT));
 
         // Cache TTL: 10 minutes
         $cacheTTL = now()->addMinutes(60);
@@ -53,9 +53,9 @@ class InvoiceController extends Controller
         $pageSize = $pageSize ?? 15;
 
         // Cache and retrieve paginated invoices
-        $paginatedInvoices = Cache::remember($cacheKey, $cacheTTL, function () use ($invoiceQuery, $pageSize, $request, $cacheKey) {
+        $paginatedInvoices = Cache::tags(['invoices'])->remember($cacheKey, $cacheTTL, function () use ($invoiceQuery, $pageSize, $request, $cacheKey) {
             Log::info("Caching paginated invoices with key: {$cacheKey}");
-            return $invoiceQuery->paginate($pageSize)->appends($request->query());
+            return $invoiceQuery->orderBy('created_at', 'desc')->paginate($pageSize)->appends($request->query());
         });
 
         return new InvoiceCollection($paginatedInvoices);
@@ -74,9 +74,7 @@ class InvoiceController extends Controller
                 return $invoice;
             });
 
-            // Clear cache for invoices
-            Cache::store('redis')->flush(); // Flush Redis database 1
-            Log::info("Cleared cache for invoices:* after creating invoice ID: {$invoice->id}");
+        //    $this->clearInvoiceCache();
 
             return new InvoiceResource($invoice);
         } catch (\Exception $e) {
@@ -106,6 +104,20 @@ class InvoiceController extends Controller
                 // Get validated data
                 $invoiceData = $invoiceRequest->validated();
                 $productData = $productRequest->validated();
+
+                if (isset($invoiceData['status'])) {
+                    $newStatus = $invoiceData['status'];
+    
+                    // Set sent_at if status changes to 'sent' and not already set
+                    if ($newStatus === 'issued' && !$invoice->sent_at) {
+                        $invoiceData['billed_date'] = now();
+                    }
+    
+                    // Set paid_at if status changes to 'paid' and not already set
+                    if ($newStatus === 'paid' && !$invoice->paid_at) {
+                        $invoiceData['paid_date'] = now();
+                    }
+                }
               
 
                 // Handle status change to 'draft'
@@ -147,8 +159,8 @@ class InvoiceController extends Controller
                 return $invoice;
             });
 
-            // Clear cache for invoices
-            $this->clearInvoiceCache();
+            // // Clear cache for invoices
+            // $this->clearInvoiceCache();
           
 
             return response()->json([
@@ -173,7 +185,7 @@ class InvoiceController extends Controller
             DB::transaction(function () use ($invoice) {
                 $invoice->delete();
             });
-            $this->clearInvoiceCache();
+            // $this->clearInvoiceCache();
 
             return response()->json([
                 'message' => 'Invoice deleted successfully',
@@ -220,13 +232,4 @@ class InvoiceController extends Controller
         }
     }
 
-    protected function clearInvoiceCache()
-    {
-        try {
-            Cache::tags(['invoices'])->flush();
-            Log::info('Invoice cache cleared due to create/update event.');
-        } catch (\Exception $e) {
-            Log::error('Failed to clear invoice cache: ' . $e->getMessage());
-        }
-    }
 }

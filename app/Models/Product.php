@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
+
 
 class Product extends Model
 {
@@ -40,6 +42,26 @@ class Product extends Model
         return $this->belongsToMany(WorkOrder::class, 'workOrder_product')
                     ->withPivot('quantity', 'unit_price')
                     ->withTimestamps();
+    }
+
+    public static function boot()
+    {
+        parent::boot();
+
+        // Création d'une facture
+        static::created(function () {
+            Cache::tags(['products'])->flush();
+        });
+
+        // Mise à jour d'une facture
+        static::updated(function () {
+            Cache::tags(['products'])->flush();
+        });
+
+        // Suppression d'une facture
+        static::deleted(function () {
+            Cache::tags(['products'])->flush();
+        });
     }
 
 

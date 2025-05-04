@@ -32,7 +32,7 @@ class ProductController extends Controller
         // Cache TTL: 60 minutes
         $cacheTTL = now()->addMinutes(60);
         if ($pageSize === 'all') {
-            $products = Cache::remember($cacheKey, $cacheTTL, function () {
+            $products = Cache::tags(['products'])->remember($cacheKey, $cacheTTL, function () {
                 return Product::all();
             });
             return ProductResource::collection($products);
@@ -40,12 +40,11 @@ class ProductController extends Controller
 
         // Handle paginated case
         $pageSize = $pageSize ?? 15; // Default to 10 if not provided
-        $paginatedproducts = Cache::remember($cacheKey, $cacheTTL, function () use ($productsQuery, $pageSize, $request ) {
+        $paginatedproducts = Cache::tags(['products'])->remember($cacheKey, $cacheTTL, function () use ($productsQuery, $pageSize, $request ) {
             return $productsQuery->paginate($pageSize)->appends($request->query());
         }); 
 
         return new ProductCollection($paginatedproducts);
-        // return new productCollection(Product::withSum('stocks', 'quantity')->get());
     }
 
     /**
@@ -63,7 +62,6 @@ class ProductController extends Controller
     {
         // $product = Product::create($request->validated());
         // return response()->json(['message' => 'Product created successfully', 'product' => $product], 201);
-        $this->clearProductCache();
         return new ProductResource(Product::create($request->validated()));
     }
 
@@ -88,7 +86,6 @@ class ProductController extends Controller
      */
     public function update(UpdateProductRequest $request, Product $product)
     {
-        $this->clearProductCache();
         return $product->update($request->validated());
     }
 
@@ -97,20 +94,8 @@ class ProductController extends Controller
      */
     public function destroy(Product $product)
     {
-        $this->clearProductCache();
 
          return $product->delete();
     }
-
-    protected function clearProductCache()
-    {
-        try {
-            Cache::tags(['products'])->flush();
-            Log::info('Product cache cleared due to create/update event.');
-        } catch (\Exception $e) {
-            Log::error('Failed to clear invoice cache: ' . $e->getMessage());
-        }
-    }
-
 
 }

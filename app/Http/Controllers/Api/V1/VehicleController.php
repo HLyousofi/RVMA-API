@@ -37,7 +37,7 @@ class VehicleController extends Controller
         $cacheTTL = now()->addMinutes(60);
 
         if ($pageSize === 'all') {
-            $vehicles = Cache::remember($cacheKey, $cacheTTL, function () use ($queryItems) {
+            $vehicles = Cache::tags(['vehicles'])->remember($cacheKey, $cacheTTL, function () use ($queryItems) {
                 return Vehicle::where($queryItems)->get();
             });
             return VehicleResource::collection($vehicles);
@@ -45,7 +45,7 @@ class VehicleController extends Controller
 
         // Handle paginated case
         $pageSize = $pageSize ?? 15; // Default to 15 if not provided
-        $paginatedvehciles = Cache::remember($cacheKey, $cacheTTL, function () use ($vehcilesQuery, $pageSize, $request) {
+        $paginatedvehciles = Cache::tags(['vehicles'])->remember($cacheKey, $cacheTTL, function () use ($vehcilesQuery, $pageSize, $request) {
            return $vehcilesQuery->paginate($pageSize)->appends($request->query()); 
         }); 
 
@@ -67,6 +67,7 @@ class VehicleController extends Controller
     public function store(StoreVehicleRequest $request)
     {
         $validatedData = $request->validated();
+
 
         return new VehicleResource(Vehicle::create($validatedData));
     }
@@ -96,12 +97,10 @@ class VehicleController extends Controller
      */
     public function update(UpdateVehicleRequest $request, Vehicle $vehicle)
     {
-         // Invalidate cache for this customer and customer lists
-         $this->invalidateVehicleCache($vehicle->id);
-         $this->invalidateVehicleListCache();
  
         $validatedData = $request->validated();
         $vehicle->update($validatedData);
+
     }
 
     /**
@@ -111,30 +110,6 @@ class VehicleController extends Controller
     {
          $vehicle->delete();
 
-         // Invalidate cache for this vehicle and customer lists
-        $this->invalidateVehicleCache($VehicleId);
-        $this->invalidateVehicleListCache();
-    }
-
-    /**
-     * Invalidate cache for a specific customer.
-     */
-    private function invalidateVehicleCache($vehcileId)
-    {
-        // Invalidate all cache keys for this customer (with/without relationships)
-        Cache::forget('vehicle:' . $vehcileId . '::');
-        Cache::forget('vehicle:' . $vehcileId . ':invoices:');
-        Cache::forget('vehicle:' . $vehcileId . ':vehicles:');
-        Cache::forget('vehicle:' . $vehcileId . ':invoices:vehicles');
-    }
-
-    /**
-     * Invalidate cache for customer lists.
-     */
-    private function invalidateVehicleListCache()
-    {
-        // Invalidate all customer list caches (simplified approach)
-        // Alternatively, use a more specific approach if you have known cache keys
-        Cache::tags(['vehicles'])->flush();
-    }
+    }    
+   
 }

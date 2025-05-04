@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\CarBrand;
 use App\Http\Resources\V1\CarBrandResource;
 use App\Http\Resources\V1\CarBrandCollection;
+use Illuminate\Support\Facades\Cache;
+
 
 class CarBrandController extends Controller
 {
@@ -15,7 +17,9 @@ class CarBrandController extends Controller
      */
     public function index()
     {
-        $carBrands = CarBrand::all();
+        $carBrands = Cache::tags(['carBrands'])->remember('carBrands_index', 60 * 60, function () {
+            return CarBrand::all();
+        });
         return new CarBrandCollection($carBrands);
     }
 

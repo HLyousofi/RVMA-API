@@ -39,7 +39,7 @@ class WorkOrderController extends Controller
         $type = $request->input('type'); // e.g., 'quote' or 'order'
 
         // Set cache key prefix based on type (quotes or orders)
-        $cacheKeyPrefix = $type === 'quote' ? 'quotes:' : 'orders:';
+        $cacheKeyPrefix = $type === 'quote' ? 'quotes' : 'orders';
 
         // Generate a unique cache key based on query parameters
         $cacheKey = $cacheKeyPrefix . md5(json_encode([
@@ -61,9 +61,8 @@ class WorkOrderController extends Controller
         $pageSize = $pageSize ?? 15;
 
         // Cache and retrieve paginated work orders
-        $paginatedWorkOrders = Cache::store('redis')->remember($cacheKey, $cacheTTL, function () use ($workOrderQuery, $pageSize, $request, $cacheKey) {
-            Log::info("Caching paginated work orders with key: {$cacheKey}");
-            return $workOrderQuery->paginate($pageSize)->appends($request->query());
+        $paginatedWorkOrders = Cache::tags([$cacheKeyPrefix])->remember($cacheKey, $cacheTTL, function () use ($workOrderQuery, $pageSize, $request, $cacheKey) {
+            return $workOrderQuery->orderBy('created_at', 'desc')->paginate($pageSize)->appends($request->query());
         });
 
         return new WorkOrderCollection($paginatedWorkOrders);
@@ -104,10 +103,6 @@ class WorkOrderController extends Controller
                 return $workOrder;
             });
 
-            // Clear cache for the work order type (quotes or orders)
-            $cacheKeyPrefix = $workOrder->type === 'quote' ? 'quotes:*' : 'orders:*';
-            Cache::store('redis')->flush(); // Simplest approach: flush Redis database 1
-            Log::info("Cleared cache for {$cacheKeyPrefix} after creating work order ID: {$workOrder->id}");
 
             return response()->json([
                 'message' => 'WorkOrder created successfully',
@@ -208,11 +203,6 @@ class WorkOrderController extends Controller
                 return $workOrder;
             });
 
-            // Clear cache for the work order type (quotes or orders)
-            $cacheKeyPrefix = $workOrder->type === 'quote' ? 'quotes:*' : 'orders:*';
-            Cache::store('redis')->flush(); // Simplest approach: flush Redis database 1
-            Log::info("Cleared cache for {$cacheKeyPrefix} after creating work order ID: {$workOrder->id}");
-
             return response()->json([
                 'message' => 'WorkOrder updated successfully',
                 'data' => $workOrder->load('products'),
@@ -306,4 +296,5 @@ class WorkOrderController extends Controller
         $number = $latestInvoice ? (int) str_replace('INV-', '', $latestInvoice->invoice_number) + 1 : 1;
         return 'INV-' . str_pad($number, 3, '0', STR_PAD_LEFT);
     }
+
 }
