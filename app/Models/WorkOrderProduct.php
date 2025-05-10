@@ -5,14 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class QuoteProduct extends Model
+class WorkOrderProduct extends Model
 {
     use HasFactory;
 
-    protected $table = 'workOrder_product';
+    protected $table = 'workorder_product';
 
     protected $fillable = [    
-        'work_order_id',   
+        'workorder_id',   
         'product_id',
         'quantity',
         'line_price',
@@ -37,6 +37,7 @@ class QuoteProduct extends Model
 
 
     public function workOrder() {
+           
         return $this->belongsTo(WorkOrder::class, 'work_order_id');
     }
 

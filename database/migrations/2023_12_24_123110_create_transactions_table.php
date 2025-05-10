@@ -13,10 +13,10 @@ return new class extends Migration
     {
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->integer('product_id');
-            $table->integer('supplier_id');
-            $table->date('reseption_date');
-            $table->float('unit_price');
+            $table->integer('product_id')->constrained('products')->onDelete('set null');
+            $table->integer('supplier_id')->constrained('suppliers')->onDelete('set null');
+            $table->date('transaction_date');
+            $table->decimal('selling_price',8 ,2)->default(0.00);
             $table->integer('quantity');
             $table->timestamps();
         });

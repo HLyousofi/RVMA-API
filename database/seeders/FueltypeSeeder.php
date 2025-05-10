@@ -15,10 +15,10 @@ class FueltypeSeeder extends Seeder
     {
         //
         DB::table('fuel_types')->insert([
-            ['fuel_type' => 'Petrol'],
-            ['fuel_type' => 'Diesel'],
-            ['fuel_type' => 'Electric'],
-            ['fuel_type' => 'Hybrid'],
+            ['fuel_type' => 'Petrol', 'created_at' => now(), 'updated_at' => now(),],
+            ['fuel_type' => 'Diesel','created_at' => now(),'updated_at' => now()],
+            ['fuel_type' => 'Electric', 'created_at' => now(),'updated_at' => now(),],
+            ['fuel_type' => 'Hybrid','created_at' => now(),'updated_at' => now()],
         ]);
     }
 }

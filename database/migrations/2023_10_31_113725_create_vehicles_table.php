@@ -13,11 +13,16 @@ return new class extends Migration
     {
         Schema::create('vehicles', function (Blueprint $table) {
             $table->id();
-            $table->integer('customer_id');
-            $table->string('brand');
+            $table->unsignedBigInteger('customer_id')->constrained('customers')->onDelete('set null');
+            $table->unsignedBigInteger('brand_id')->constrained('car_brands')->onDelete('set null');
+            $table->foreignId('fueltype_id')->nullable()->constrained('fuel_types')->onDelete('set null');
             $table->string('model');
             $table->string('plate_number');
             $table->timestamps();
+            // $table->foreign('brand_id')->references('id')->on('car_brands')->onDelete('cascade');
+            // $table->foreign('customer_id')->references('id')->on('customers')->onDelete('set null');
+
+
         });
     }
 

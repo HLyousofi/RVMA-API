@@ -31,7 +31,7 @@ class StoreVehicleRequest extends FormRequest
     }
 
     public function prepareForValidation(){
-        return $this->merge([
+         $this->merge([
             'customer_id' => $this->customerId,
             'plate_number' => $this->plateNumber,
             'fueltype_id' => $this->fuelType,

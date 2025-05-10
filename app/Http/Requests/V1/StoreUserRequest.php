@@ -22,10 +22,20 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "name" => "required",
+            "last_name" => "required|string",
+            "first_name" => "required|string",
+            "phone_number" => "required|string",
             "email" => "required|email|unique:users,email",
             "password" => "required"
         ];
     }
+
+    public function prepareForValidation(){
+         return $this->merge([
+           "phone_number" => $this->phoneNumber,
+           "last_name" => $this->lastName,
+           "first_name" => $this->firstName,
+       ]);
+   }
 
 }
