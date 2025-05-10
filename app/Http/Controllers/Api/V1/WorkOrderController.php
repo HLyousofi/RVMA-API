@@ -82,6 +82,7 @@ class WorkOrderController extends Controller
                 if ($workOrderData['type'] == 'order') {
                     $workOrderData['order_date'] = now()->toDateTimeString();
                 }
+              
                 // Create the workOrder
                 $workOrder = WorkOrder::create($workOrderData);
 
@@ -94,7 +95,7 @@ class WorkOrderController extends Controller
                         ]
                     ];
                 })->all();
-
+               
                 // Attach products to the workOrder
                 $workOrder->products()->sync($productWorkOrders);
 

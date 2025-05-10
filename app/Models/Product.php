@@ -19,7 +19,6 @@ class Product extends Model
         'manufacturer_reference',
         'oem_reference',
         'description' ,
-        // 'referance',
         'purchase_price',
         'sale_price'
         
@@ -39,7 +38,7 @@ class Product extends Model
 
     public function quotes()
     {
-        return $this->belongsToMany(WorkOrder::class, 'workOrder_product')
+        return $this->belongsToMany(WorkOrder::class, 'workorder_product')
                     ->withPivot('quantity', 'unit_price')
                     ->withTimestamps();
     }

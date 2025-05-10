@@ -3,6 +3,8 @@
 namespace App\Http\Requests\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
 
 class UpdateUserRequest extends FormRequest
 {
@@ -21,20 +23,33 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules(): array
     {
-        $method = $this->method();
-        if($method == 'PUT'){
+        $userId = $this->route('user'); 
             return [
-                "name" => "required",
-                "email" => "required|email|unique:users,email",
-                "email_verified_at" => "email|unique:users,email",
-                "password" => "required"
+                "email" => ["sometimes","email",Rule::unique('users', 'email')->ignore($userId)],
+                "password" => "sometimes",
+                "last_name" => "sometimes",
+                "first_name" => "sometimes",
+                "phone_number" => "sometimes",
             ];
-        } else {
-            return [
-                "name" => "sometimes",
-                "email" => "sometimes|email|unique:users,email",
-                "password" => "sometimes"
-            ];
-        }
+        
     }
+
+    public function prepareForValidation(){
+        if($this->phoneNumber){
+            $this->merge([
+                'phone_number' => $this->phoneNumber,
+            ]);
+        }
+        if($this->lastName){
+            $this->merge([
+                'last_name' => $this->lastName,
+            ]);
+        }
+      if($this->firstName){
+            $this->merge([
+                'first_name' => $this->firstName,
+            ]);
+        }
+       
+   }
 }

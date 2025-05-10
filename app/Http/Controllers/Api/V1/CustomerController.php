@@ -57,11 +57,6 @@ class CustomerController extends Controller
     {
         $customer = Customer::create($request->all());
 
-        // Invalidate cache for customer lists
-        $this->invalidateCustomerListCache();
-
-        
-
         return new CustomerResource($customer);
     }
 

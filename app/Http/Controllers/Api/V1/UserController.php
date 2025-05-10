@@ -8,6 +8,7 @@ use App\Http\Requests\V1\StoreUserRequest;
 use App\Http\Requests\V1\UpdateUserRequest;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\V1\UserResource;
+use App\Http\Resources\V1\UserCollection;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -17,7 +18,7 @@ class UserController extends Controller
      */
     public function index()
     {
-        return userResource::collection(User::query()->orderBy('id', 'desc')->paginate());
+        return  new UserCollection(User::query()->orderBy('id', 'desc')->paginate());
     }
 
     /**
@@ -33,7 +34,10 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {   
-        return new UserResource(User::create($request->all()));
+        \Log::info('[' . basename(__FILE__) . ':' . __LINE__ . '] Copied Object :', [
+            'data' => $request->validated()
+        ]);
+        return new UserResource(User::create($request->validated()));
     }
 
     /**
@@ -57,7 +61,7 @@ class UserController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        $user->update($request->all());
+        $user->update($request->validated());
     }
 
     /**
