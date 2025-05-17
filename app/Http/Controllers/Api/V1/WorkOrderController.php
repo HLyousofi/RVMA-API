@@ -259,6 +259,7 @@ class WorkOrderController extends Controller
      */
     public function downloadPdf($id)
     {
+        
         try {
             $workOrder = WorkOrder::with(['products', 'vehicle.brand', 'customer'])->findOrFail($id);
 

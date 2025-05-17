@@ -74,7 +74,6 @@ class InvoiceController extends Controller
                 return $invoice;
             });
 
-        //    $this->clearInvoiceCache();
 
             return new InvoiceResource($invoice);
         } catch (\Exception $e) {
