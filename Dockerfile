@@ -1,50 +1,61 @@
-# Utiliser une image PHP avec PHP-FPM
+# Étape de construction
 FROM php:8.2-fpm
 
-# Installer les dépendances système et l'extension Redis
+# Install Nginx and dependencies
 RUN apt-get update && apt-get install -y \
+    nginx \
     libpng-dev \
     libjpeg-dev \
     libfreetype6-dev \
     zip \
     unzip \
-    git \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql \
     && pecl install redis \
     && docker-php-ext-enable redis
 
-# Installer Composer
+# Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# Définir le répertoire de travail
+# Set working directory
 WORKDIR /var/www
 
-# Copier les fichiers de dépendances pour optimiser le cache
+# Copy Composer files and install dependencies
 COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --ignore-platform-reqs
 
-# Installer les dépendances Composer
-RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
-
-# Copier le reste de l'application
+# Copy application code
 COPY . .
 
-# Générer l'autoloader
-RUN composer dump-autoload
+# Optimize Composer autoloader
+RUN composer dump-autoload --no-dev --optimize
+
+# Cache Laravel configs and routes
+RUN php artisan route:cache
 
 # Copier le script d'entrée
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-# Donner les permissions initiales
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
-RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+# Create storage directories
+RUN mkdir -p /var/www/storage/framework/cache \
+    && mkdir -p /var/www/storage/framework/views \
+    && mkdir -p /var/www/storage/fonts \
+    && mkdir -p /var/www/storage/logs \
+    && chown -R www-data:www-data /var/www/storage \
+    && chmod -R 775 /var/www/storage
 
-# Exposer le port
-EXPOSE 9000
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/sites-available/default
 
-# Utiliser le script d'entrée
+# Ensure proper permissions
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/storage
+
+# Expose port 80 for HTTP
+EXPOSE 80
+
 ENTRYPOINT ["/entrypoint.sh"]
 
-# Commande par défaut
-CMD ["php-fpm"]
+# Start Nginx and PHP-FPM
+CMD service nginx start && php-fpm
