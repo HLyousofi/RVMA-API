@@ -13,6 +13,8 @@ class WorkOrder extends Model
 {
     use HasFactory;
 
+    protected $table = 'work_orders';
+
     protected $fillable = [    
         'customer_id',
         'quote_number',
