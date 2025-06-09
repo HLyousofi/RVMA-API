@@ -27,6 +27,9 @@ class WorkOrderProduct extends Model
     static::saved(function ($workorderProduct) {
         $workorderProduct->workorder->updateTotalPrice();
     });
+    static::updated(function ($workorderProduct) {
+        $workorderProduct->workorder->updateTotalPrice();
+    });
 
     static::deleted(function ($workorderProduct) {
         $workorderProduct->workorder->updateTotalPrice();

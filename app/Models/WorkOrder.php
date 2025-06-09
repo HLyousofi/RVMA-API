@@ -54,10 +54,7 @@ class WorkOrder extends Model
         $total = $this->products()
                     ->selectRaw('SUM(workorder_product.quantity * workorder_product.unit_price) as total')
                     ->value('total') ?? 0;
-
-        if ($this->total !== $total) {
-            $this->updateQuietly(['total' => $total]);
-        }
+        return $total;
     }
 
     
@@ -77,6 +74,10 @@ class WorkOrder extends Model
         });
     
         static::updating(function ($workOrder) {
+            \Log::info('[' . basename(__FILE__) . ':' . __LINE__ . '] Copied Object :', [
+                'data' => $workOrder
+            ]);
+            $cacheTag = $workOrder->type === 'quote' ? 'quotes' : 'orders';
             if ($workOrder->isDirty('type') && $workOrder->type === 'order' && $workOrder->status == 'pending' ) {
                 Cache::tags(['quotes'])->flush();
                 Cache::tags(['orders'])->flush();
@@ -84,8 +85,8 @@ class WorkOrder extends Model
                 $workOrder->workorder_number = $prefix . str_pad($workOrder->id, 3, '0', STR_PAD_LEFT);
                 $workOrder->updateTotalPrice();
             }else {
-                $cacheTag = $workOrder->type === 'quote' ? 'quotes' : 'orders';
                 Cache::tags([$cacheTag])->flush();
+
             }
         });
 
