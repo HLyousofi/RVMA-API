@@ -180,7 +180,7 @@ class WorkOrderController extends Controller
                 }
 
                 // Update the WorkOrder data
-                $workOrder->update($workOrderData);
+                
 
                 // If products are provided, update the relationship
                 if (isset($productData['productsWorkOrder']) && !empty($productData['productsWorkOrder'])) {
@@ -197,9 +197,8 @@ class WorkOrderController extends Controller
                     // Sync products with the WorkOrder
                     $workOrder->products()->sync($productWorkOrders);
                 }
-
-                // Update the total price
-                $workOrder->updateTotalPrice();
+                $workOrderData['total'] = $workOrder->updateTotalPrice();
+                $workOrder->update($workOrderData);
 
                 return $workOrder;
             });
