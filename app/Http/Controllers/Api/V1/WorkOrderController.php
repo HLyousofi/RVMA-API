@@ -100,7 +100,6 @@ class WorkOrderController extends Controller
                 $workOrder->products()->sync($productWorkOrders);
 
                 $workOrder->updateTotalPrice();
-
                 return $workOrder;
             });
 
@@ -197,8 +196,9 @@ class WorkOrderController extends Controller
                     // Sync products with the WorkOrder
                     $workOrder->products()->sync($productWorkOrders);
                 }
-                $workOrderData['total'] = $workOrder->updateTotalPrice();
+                
                 $workOrder->update($workOrderData);
+                $workOrder->updateTotalPrice();
 
                 return $workOrder;
             });
