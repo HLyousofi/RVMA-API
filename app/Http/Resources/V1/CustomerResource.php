@@ -4,6 +4,8 @@ namespace App\Http\Resources\V1;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\V1\ContactResource;
+
 
 class CustomerResource extends JsonResource
 {
@@ -29,6 +31,7 @@ class CustomerResource extends JsonResource
                 'email' => $this->email,
                 'phoneNumber' => $this->phone_number,
                 'ice' => $this->ice,
+                'contacts' => ContactResource::collection($this->whenLoaded('contacts')),
             ]);
         }
 

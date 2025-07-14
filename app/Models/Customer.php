@@ -26,6 +26,10 @@ class Customer extends Model
         return $this->hasMany(Invoice::class);
     }
 
+    public function contacts() {
+        return $this->hasMany(Contact::class);
+    }
+
     public function vehicles() {
         return $this->hasMany(Vehicle::class);
     }
@@ -44,9 +48,9 @@ class Customer extends Model
         });
 
         // Mise à jour d'une facture
-        static::updated(function () {
-            Cache::tags(['customers'])->flush();
-        });
+        // static::updated(function () {
+        //     Cache::tags(['customers'])->flush();
+        // });
 
         // Suppression d'une facture
         static::deleted(function () {

@@ -27,7 +27,7 @@ class StoreCustomerRequest extends FormRequest
             'adress' => 'required',
             'email' => 'required|email|unique:customers,email',
             'phone_number' => 'required|unique:customers,phone_number',
-            'ice' => 'nullable'
+            'ice' => 'nullable',
         ];
     }
 

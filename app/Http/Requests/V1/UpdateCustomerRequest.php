@@ -50,11 +50,5 @@ class UpdateCustomerRequest extends FormRequest
                 'phone_number' => $this->phoneNumber
             ]);
         }
-        // if($this->customInfo){
-        //      $this->merge([
-        //         'custom_info' => $this->customInfo
-        //     ]);
-        // }
-        
     }
 }

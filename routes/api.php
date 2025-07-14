@@ -33,6 +33,7 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1', 'm
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::apiResource('users', UserController::class);
     Route::apiResource('customers', CustomerController::class);
+    Route::apiResource('contacts', ContactController::class);
     Route::apiResource('invoices', InvoiceController::class);
     Route::apiResource('vehicles', VehicleController::class);
     Route::apiResource('categories', CategoryController::class);
