@@ -61,12 +61,6 @@ class StoreWorkOrderRequest extends FormRequest
             'current_mileage' => $this->currentMileage
         ]);
 
-        // if($this->type == ){
-        //     $this-merge([
-        //         'order_date' => $this->orderDate
-        //     ]);
-        // };
-
         if($this->deliveryDate){
             $this-merge([
                 'delivery_date' => $this->deliveryDate
