@@ -291,11 +291,19 @@ class WorkOrderController extends Controller
     /**
      * Generate a unique invoice number.
      */
-    private function generateInvoiceNumber()
+    
+
+     private function generateInvoiceNumber()
     {
+        $prefix = config('app.invoice_prefix', 'INV');
+        $startNumber = config('app.invoice_start_number', 1);
+
         $latestInvoice = Invoice::latest()->first();
-        $number = $latestInvoice ? (int) str_replace('INV-', '', $latestInvoice->invoice_number) + 1 : 1;
-        return 'INV-' . str_pad($number, 3, '0', STR_PAD_LEFT);
+        $number = $latestInvoice 
+            ? (int) str_replace($prefix . '-', '', $latestInvoice->invoice_number) + 1 
+            : $startNumber;
+
+        return $prefix.str_pad(max($startNumber, $number), 3, '0', STR_PAD_LEFT);
     }
 
 }
