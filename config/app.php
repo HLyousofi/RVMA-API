@@ -44,6 +44,9 @@ return [
 
     'debug' => (bool) env('APP_DEBUG', true),
 
+    'invoice_prefix' => env('INVOICE_PREFIX', ''),
+    'invoice_start_number' => env('INVOICE_START_NUMBER', 1),
+
     /*
     |--------------------------------------------------------------------------
     | Application URL
@@ -184,6 +187,7 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
+        'Redis' => Illuminate\Support\Facades\Redis::class,
     ])->toArray(),
 
 ];

@@ -25,18 +25,18 @@ class UpdateVehicleRequest extends FormRequest
         if($method == 'PUT'){
             return [
                 'customer_id' => 'required|integer|exists:customers,id',
-                'brand' => 'required|string',
+                'brand' => 'required|integer',
                 'model' => 'required|string',
                 'plate_number' => 'required|string',
-                'fuel_type' => 'required|string'
+                'fueltype_id' => 'required|integer'
             ];
         }else {
             return [
                 'customer_id' => 'sometimes|required|integer|exists:customers,id',
-                'brand' => 'sometimes|required|string',
+                'brand_id' => 'sometimes|required|integer',
                 'model' => 'sometimes|required|string',
                 'plate_number' => 'sometimes|required|string',
-                'fuel_type' => 'sometimes|required|string'
+                'fueltype_id' => 'sometimes|required|integer'
             ];
         }
     }
@@ -54,7 +54,12 @@ class UpdateVehicleRequest extends FormRequest
         }
         if($this->fuelType){ 
             $this->merge([
-                'fuel_type' => $this->fuelType
+                'fueltype_id' => $this->fuelType
+            ]);
+        }
+        if($this->brand){ 
+            $this->merge([
+                'brand_id' => $this->brand
             ]);
         }
     }

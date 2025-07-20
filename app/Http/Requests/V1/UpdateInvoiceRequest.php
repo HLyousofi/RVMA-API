@@ -21,32 +21,27 @@ class UpdateInvoiceRequest extends FormRequest
      */
     public function rules(): array
     {
-        $method = $this->method();
-        if($method == 'PUT'){
-            return [
-                'customer_id' => ["required","exists:customers,id"],
-                'amount' => ["required","numeric"],
-                'status' => ['required'],
-                'billed_date' => ["required","date"],
-                'paid_date' => ["nullable","date","after:billed_date"]
-            ];
+        return [
+            'customer_id' => 'sometimes|integer|exists:customers,id', // "sometimes" rend le champ optionnel
+            'vehicle_id' => 'sometimes|integer|exists:vehicles,id',
+            'discount' => 'sometimes|numeric|min:0',
+            'billed_date' => 'sometimes|date_format:Y-m-d H:i:s', // Optionnel mais format strict si fourni
+            'amount' => 'sometimes|numeric|min:0',
+            'paid_date' => 'sometimes|date_format:Y-m-d H:i:s',
+            'status' => 'sometimes|in:rejected,draft,issued,paid',
 
-        }else {
-            return [
-                'customer_id' => 'sometimes|required|exists:customers,id',
-                'amount' => 'sometimes|required|numeric',
-                'status' => 'sometimes|required',
-                'billed_date' => 'sometimes|required|date',
-                'paid_date' => 'sometimes|nullable|date|after:billed_date'
-            ];
-        
-        }
+        ];
     }
 
     public function prepareForValidation() {
         if($this->customerId){
             $this->merge([
                 'customer_id' => $this->customerId
+            ]);
+        }
+        if($this->vehicleId){
+            $this->merge([
+                'vehicle_id' => $this->vehicleId
             ]);
         }
         if($this->billedDate){

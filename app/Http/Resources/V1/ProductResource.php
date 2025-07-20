@@ -5,6 +5,7 @@ namespace App\Http\Resources\V1;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+
 class ProductResource extends JsonResource
 {
     /**
@@ -16,13 +17,29 @@ class ProductResource extends JsonResource
     {
         // return parent::toArray($request);
 
-        return [
+        $base = [
+            'id' => $this->id,
+            'label' => $this->name,
+        ];
+
+        // Add extra fields only if not for autocomplete
+        if ($request->query('pageSize') !== 'all') {
+            $base = array_merge($base, [
             'id' => $this->id,
             'name' => $this->name,
+            'brand' => $this->brand,
+            'model' => $this->model,
+            'category' => new CategoryResource($this->category),
+            'oemReference' => $this->oem_reference,
+            'manufacturerReference' => $this->manufacturer_reference,
             'description' => $this->description,
             'referance' => $this->referance,
-            'price' => $this->price,
-            'unitInStock' => $this->unit_in_stock,
-        ];
+            'purchasePrice' => $this->purchase_price,
+            'sellingPrice' => $this->selling_price,
+            'totalStock' => $this->stocks->sum('quantity'),
+                
+            ]);
+        }
+        return $base;
     }
 }

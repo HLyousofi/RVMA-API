@@ -10,6 +10,8 @@ use App\Filters\V1\VehicleFilter;
 use App\Http\Resources\V1\VehicleCollection;
 use App\Http\Resources\V1\VehicleResource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+
 
 class VehicleController extends Controller
 {
@@ -21,20 +23,33 @@ class VehicleController extends Controller
         $filter = new VehicleFilter();
         $queryItems = $filter->transform($request);
         $pageSize = $request->query('pageSize');
-        $vehicles = Vehicle::where($queryItems);
-        if($request->query('includeOrders')){
-            $vehicles = $vehicles->with('orders');
+        // $vehicles = Vehicle::where($queryItems);
+        $vehcilesQuery = Vehicle::query();
+
+         // Generate a unique cache key based on query parameters
+         $cacheKey = 'vehicles:' . md5(json_encode([
+            'filters' => $queryItems,
+            'page' => $request->query('page', 1),
+            'pageSize' => $pageSize,
+        ]));
+
+        // Cache TTL: 60 minutes
+        $cacheTTL = now()->addMinutes(60);
+
+        if ($pageSize === 'all') {
+            $vehicles = Cache::tags(['vehicles'])->remember($cacheKey, $cacheTTL, function () use ($queryItems) {
+                return Vehicle::where($queryItems)->get();
+            });
+            return VehicleResource::collection($vehicles);
         }
-        if($request->query('includeQuotes')){
-            $vehicles = $vehicles->with('quotes');
-        }
-        if($pageSize == 'all'){
-            $vehicles = $vehicles->get();
-            return new VehicleCollection($vehicles);
-    
-        }
-        $vehicles = Vehicle::where($queryItems);
-        return new VehicleCollection($vehicles->paginate($pageSize)->appends($request->query()));
+
+        // Handle paginated case
+        $pageSize = $pageSize ?? 15; // Default to 15 if not provided
+        $paginatedvehciles = Cache::tags(['vehicles'])->remember($cacheKey, $cacheTTL, function () use ($vehcilesQuery, $pageSize, $request) {
+           return $vehcilesQuery->paginate($pageSize)->appends($request->query()); 
+        }); 
+
+        return new VehicleCollection($paginatedvehciles);
         
     }
 
@@ -51,7 +66,10 @@ class VehicleController extends Controller
      */
     public function store(StoreVehicleRequest $request)
     {
-        return new VehicleResource(Vehicle::create($request->all()));
+        $validatedData = $request->validated();
+
+
+        return new VehicleResource(Vehicle::create($validatedData));
     }
 
     /**
@@ -79,7 +97,10 @@ class VehicleController extends Controller
      */
     public function update(UpdateVehicleRequest $request, Vehicle $vehicle)
     {
-        $vehicle->update($request->all());
+ 
+        $validatedData = $request->validated();
+        $vehicle->update($validatedData);
+
     }
 
     /**
@@ -88,5 +109,7 @@ class VehicleController extends Controller
     public function destroy(Vehicle $vehicle)
     {
          $vehicle->delete();
-    }
+
+    }    
+   
 }

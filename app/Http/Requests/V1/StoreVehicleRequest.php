@@ -23,18 +23,19 @@ class StoreVehicleRequest extends FormRequest
     {
         return [
             'customer_id' => 'required|integer|exists:customers,id',
-            'brand' => 'required|string',
+            'brand_id' => 'required|integer',
             'model' => 'required|string',
             'plate_number' => 'required|string',
-            'fuel_type' => 'required|string'
+            'fueltype_id' => 'required|integer'
         ];
     }
 
     public function prepareForValidation(){
-        return $this->merge([
+         $this->merge([
             'customer_id' => $this->customerId,
             'plate_number' => $this->plateNumber,
-            'fuel_type' => $this->fuelType
+            'fueltype_id' => $this->fuelType,
+            'brand_id' => $this->brand
         ]);
     }
 }
