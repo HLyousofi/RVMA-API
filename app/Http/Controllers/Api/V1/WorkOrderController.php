@@ -279,8 +279,6 @@ class WorkOrderController extends Controller
             return $pdf->stream('devis-' . $workOrder->workorderNumber . '.pdf');
         } catch (\Exception $e) {
             // Log the error for debugging
-            \Log::error('Error generating PDF: ' . $e->getMessage());
-
             return response()->json([
                 'message' => 'Failed to generate PDF',
                 'error' => $e->getMessage(),
