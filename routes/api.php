@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\WorkOrderController;
 use App\Http\Controllers\Api\V1\InvoiceController;
+use Illuminate\Support\Facades\Log;
+
 
 
 
@@ -25,12 +27,16 @@ use App\Http\Controllers\Api\V1\InvoiceController;
 
 Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1'], function(){
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/refresh-token', [AuthController::class, 'refreshToken'])->name('refreshToken');
+
+
+    
 });
 
 
 
 Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1', 'middleware' => 'auth:sanctum'], function() {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::apiResource('users', UserController::class);
     Route::apiResource('customers', CustomerController::class);
     Route::apiResource('contacts', ContactController::class);

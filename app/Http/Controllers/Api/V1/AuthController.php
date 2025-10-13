@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use Laravel\Sanctum\PersonalAccessToken;
 
 
 class AuthController extends Controller
@@ -24,14 +25,32 @@ class AuthController extends Controller
         
                 try {
                     // Attempt to create a token
-                    $token = $user->createToken('admin-token', expiresAt:now()->addHours(2))->plainTextToken;
-                    return response([
+                    $accessToken = $user->createToken('access-token', ['*'], now()->addMinutes(30))->plainTextToken;
+
+                    // Créer refresh token (7 jours)
+                    $refreshToken = $user->createToken('refresh-token', ['refresh'], now()->addDays(7))->plainTextToken;
+                   
+
+                    $cookie = cookie(
+                        'refresh_token',         // nom du cookie
+                        $refreshToken,           // valeur
+                        60*24*7,                 // durée en minutes (7 jours)
+                        '/',                      // path
+                        'localhost',             // domaine
+                        true,                     // secure (HTTPS)
+                        true,                     // httpOnly
+                        false,                    // raw
+                        'Strict'                  // SameSite
+                    );
+                    
+
+                    return response()->json([
                         'success' => true,
-                        'name' => $user->name,
-                        'accessToken' => $token,
-                        // 'rights' => json_decode($user->right),
-                        // 'role' => $user->role
-                    ]);
+                        'accessToken' => $accessToken,
+                        'firstName' => $user->first_name,
+                    ], 200)->cookie($cookie);
+
+                    
                 } catch (\Exception $e) {
                     // Handle any errors that occur during the token creation
                     return response([
@@ -59,16 +78,54 @@ class AuthController extends Controller
 
 
     public function logout(Request $request) {
-        // Récupérer l’utilisateur authentifié
         $user = $request->user();
 
-        // Révoquer tous les tokens de l’utilisateur (ou juste le token actuel)
-        $user->tokens()->delete(); // Supprime tous les tokens
-        // Pour supprimer uniquement le token actuel :
-        // $request->user()->currentAccessToken()->delete();
-
+        if ($user) {
+            // Supprime tous les tokens (ou seulement le courant)
+            $user->tokens()->delete();
+        }
+    
+        // Supprimer le cookie refresh_token
+        $forgetCookie = cookie()->forget('refresh_token');
+    
         return response()->json([
-            'message' => 'Déconnexion réussie',
-        ], 200);
+            'success' => true,
+            'message' => 'Déconnexion réussie.'
+        ])->withCookie($forgetCookie);
+        
     }
+
+ 
+ 
+    public function refreshToken(Request $request)
+{
+    $refreshToken = $request->cookie('refresh_token');
+
+    if (!$refreshToken) {
+        return response()->json(['success' => false, 'error' => 'Missing refresh token'], 401);
+    }
+
+    $personalAccessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($refreshToken);
+   
+    if (!$personalAccessToken || !in_array('refresh', $personalAccessToken->abilities)) {
+        return response()->json(['success' => false, 'error' => 'Invalid refresh token'], 401);
+    }
+
+     // Récupérer l'utilisateur lié
+     $user = $personalAccessToken->tokenable;
+
+    if (!$user) return response()->json(['success' => false, 'error' => 'Invalid token'], 401);
+
+    // Génère un nouveau access token
+    $newAccessToken = $user->createToken('access-token', ['*'], now()->addMinutes(30))->plainTextToken;
+
+    return response()->json([
+        'success' => true,
+        'accessToken' => $newAccessToken,
+        'firstName' => $user->first_name,
+    ]);
+}
+
+
+    
 }

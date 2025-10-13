@@ -34,9 +34,7 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {   
-        \Log::info('[' . basename(__FILE__) . ':' . __LINE__ . '] Copied Object :', [
-            'data' => $request->validated()
-        ]);
+        
         return new UserResource(User::create($request->validated()));
     }
 
@@ -56,6 +54,7 @@ class UserController extends Controller
     //     //
     // }
 
+    
     /**
      * Update the specified resource in storage.
      */
