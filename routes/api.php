@@ -29,6 +29,8 @@ Route::group(['prefix' => 'v1', 'namespace' => 'App\Http\Controllers\Api\V1'], f
     Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/refresh-token', [AuthController::class, 'refreshToken'])->name('refreshToken');
 
+
+    
 });
 
 
